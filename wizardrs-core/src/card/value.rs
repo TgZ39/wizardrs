@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum CardValue {
@@ -7,10 +7,8 @@ pub enum CardValue {
     Wizard,
 }
 
-impl TryFrom<u8> for CardValue {
-    type Error = Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl CardValue {
+    pub fn new(value: u8) -> Result<Self> {
         match value {
             0 => Ok(Self::Fool),
             1..=13 => Ok(Self::Simple(value)),
@@ -18,9 +16,7 @@ impl TryFrom<u8> for CardValue {
             _ => Err(Error::CardValueError),
         }
     }
-}
 
-impl CardValue {
     pub fn value(&self) -> u8 {
         match self {
             CardValue::Fool => 0,
