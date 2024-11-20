@@ -6,7 +6,7 @@ edition = "2021"
 [workspace]
 members = [
     "wizardrs-core"
-]
+, "wizardrs-server"]
 
 [dependencies]
 wizardrs-core = { path = "wizardrs-core" }
