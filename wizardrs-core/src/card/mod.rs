@@ -15,7 +15,7 @@ pub struct Card {
 
 impl Card {
     pub fn new(value: u8, color: CardColor) -> Result<Self> {
-        let value = CardValue::try_from(value)?;
+        let value = CardValue::new(value)?;
 
         Ok(Self { color, value })
     }

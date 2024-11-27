@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-thiserror = "2.0"
-derive_more = { version = "1.0", features = ["display"] }
-strum = { version = "0.26", features = ["derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
+thiserror = "2.0.3"
+derive_more = { version = "1.0.0", features = ["display"] }
+uuid = { version = "1.11.0", features = ["v4", "serde"] }
+strum = { version = "0.26.3", features = ["derive"] }
 
 [dev-dependencies]
 paste = "1.0"
+

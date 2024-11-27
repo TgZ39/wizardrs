@@ -4,3 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+wizardrs-core = { path = "../wizardrs-core" }
+
+tokio = { version = "1.41", features = ["full"] }
+tokio-tungstenite = "0.24"
+derive_more = "1.0.0"
+thiserror = "2.0.3"
+futures = "0.3.31"
+serde_json = "1.0.133"
+uuid = { version = "1.11.0", features = ["v4"] }
+ngrok = "0.13.1"
+tracing = "0.1.40"
+indexmap = "2.6.0"
