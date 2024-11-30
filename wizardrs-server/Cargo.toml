@@ -16,3 +16,4 @@ uuid = { version = "1.11.0", features = ["v4"] }
 ngrok = "0.13.1"
 tracing = "0.1.40"
 indexmap = "2.6.0"
+url = "2.5.4"

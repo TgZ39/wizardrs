@@ -4,4 +4,5 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type")]
 pub enum ClientEvent {
     SetUsername { username: String },
+    SendChatMessage { content: String }
 }

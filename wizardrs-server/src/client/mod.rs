@@ -28,17 +28,30 @@ impl WizardClient {
         broadcast_rx: broadcast::Receiver<ServerEvent>,
     ) -> Result<Arc<Self>> {
         let ws_stream = accept_async(stream).await?;
-        let (write, mut read) = ws_stream.split();
+        let (mut write, mut read) = ws_stream.split();
 
         let (event_tx, event_rx) = unbounded_channel();
         let (leave_tx, _leave_rx) = watch::channel(false);
+
+        let uuid = Uuid::new_v4();
+
+        // send UUID to client
+        let uuid_event = ServerEvent::SetUUID { uuid };
+        let json = serde_json::to_string(&uuid_event).unwrap();
+        let msg = Message::text(json);
+
+        if write.send(msg).await.is_err() {
+            return Err(Error::ConnectionClosed);
+        }
 
         // get username event from client
         let username = {
             let mut name = None;
 
             while let Some(Ok(msg)) = read.next().await {
-                if let Ok(ClientEvent::SetUsername { username }) = serde_json::from_str::<ClientEvent>(&msg.to_string()) {
+                if let Ok(ClientEvent::SetUsername { username }) =
+                    serde_json::from_str::<ClientEvent>(&msg.to_string())
+                {
                     name = Some(username);
                     break;
                 }
@@ -53,7 +66,7 @@ impl WizardClient {
         };
 
         let client = Arc::new(Self {
-            uuid: Uuid::new_v4(),
+            uuid,
             username: username.unwrap(),
             event_tx,
             leave_tx,
@@ -166,10 +179,34 @@ impl WizardClient {
         self.leave_tx.send_replace(true);
 
         // remove self from server
-        self.server.disconnect_client(self.clone()).await;
+        self.server.remove_client(self.clone()).await;
     }
 
+    // Handle events being sent from the client to the server
     async fn handle_client_event(self: &Arc<Self>, event: ClientEvent) {
+        match event {
+            ClientEvent::SetUsername { .. } => {}
+            ClientEvent::SendChatMessage { content } => {
+                let event = ServerEvent::PlayerChatMessage {
+                    username: self.username.clone(),
+                    uuid: self.uuid,
+                    content,
+                };
+                self.server.broadcast_event(event);
+            }
+        }
+    }
 
+    // Handle events being broadcast from the server to the client
+    async fn handle_broadcast_event(self: &Arc<Self>, event: ServerEvent) {
+        match event {
+            ServerEvent::UpdatePlayerList { .. } => {
+                self.send_event(event);
+            }
+            ServerEvent::SetUUID { .. } => {},
+            ServerEvent::PlayerChatMessage { .. } => {
+                self.send_event(event);
+            }
+        }
     }
 }
