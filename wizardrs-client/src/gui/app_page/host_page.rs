@@ -1,8 +1,8 @@
-use crate::gui::App;
+use crate::{gui::App, interaction::GuiMessage};
 use arboard::Clipboard;
 use eframe::Frame;
 use egui::{Color32, Context};
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 use wizardrs_server::server::WizardServer;
 
 pub struct HostPage {
@@ -11,8 +11,7 @@ pub struct HostPage {
     show_authtoken: bool,
     pub authtoken: String,
     pub server: Option<Arc<WizardServer>>,
-    is_loading: bool,
-    recv_server_rx: Option<mpsc::Receiver<Option<Arc<WizardServer>>>>,
+    pub is_loading: bool,
 }
 
 impl HostPage {
@@ -23,8 +22,7 @@ impl HostPage {
             show_authtoken: false,
             authtoken: String::new(),
             server: None,
-            is_loading: false,    // indicate whether a server is being started
-            recv_server_rx: None, // receive the server from the task
+            is_loading: false, // indicate whether a server is being started
         }
     }
 
@@ -37,15 +35,6 @@ impl HostPage {
             ),
             (true, true, true) | (true, false, _)
         )
-
-        // match (
-        //     self.get_port().is_some(),
-        //     self.with_ngrok,
-        //     self.get_authtoken().is_some(),
-        // ) {
-        //     (true, true, true) | (true, false, _) => true,
-        //     _ => false,
-        // }
     }
 
     fn get_port(&self) -> Option<u16> {
@@ -65,30 +54,10 @@ impl HostPage {
             Some(self.authtoken.clone())
         }
     }
-
-    fn get_server(&mut self) {
-        if self.is_loading && self.recv_server_rx.is_some() {
-            let mut clear_rx = false;
-            if let Some(recv) = &self.recv_server_rx {
-                while let Ok(server) = recv.try_recv() {
-                    self.server = server;
-                    self.is_loading = false;
-
-                    clear_rx = true;
-                }
-            }
-
-            if clear_rx {
-                self.recv_server_rx = None;
-            }
-        }
-    }
 }
 
 impl App {
-    pub fn render_host_page(&mut self, ctx: &Context, frame: &mut Frame) {
-        self.host_page.get_server();
-
+    pub fn render_host_page(&mut self, ctx: &Context, _frame: &mut Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Grid::new("host_input").num_columns(2).show(ui, |ui| {
                 // port input
@@ -147,7 +116,7 @@ impl App {
                         && self.host_page.server.is_none(),
                     |ui| {
                         if ui.button("Start Server").clicked() {
-                            self.start_server();
+                            self.create_server();
                         }
                     },
                 );
@@ -186,19 +155,19 @@ impl App {
         });
     }
 
-    fn start_server(&mut self) {
-        let port = self.host_page.get_port().unwrap();
-        let authtoken = self.host_page.get_authtoken();
-        let (send, recv) = mpsc::channel::<Option<Arc<WizardServer>>>();
+    /// Tries to create a server
+    fn create_server(&mut self) {
+        let port = self.host_page.port.parse::<u16>().unwrap_or(8144);
+        let authtoken = if self.host_page.with_ngrok && !self.host_page.authtoken.is_empty() {
+            Some(self.host_page.authtoken.to_owned())
+        } else {
+            None
+        };
 
         self.host_page.is_loading = true;
-        self.host_page.recv_server_rx = Some(recv);
 
-        // create server
-        tokio::spawn(async move {
-            let server = WizardServer::new(port, authtoken).await.ok();
-            send.send(server).unwrap();
-        });
+        let message = GuiMessage::CreateServer { port, authtoken };
+        self.handle_message(message);
     }
 
     fn stop_server(&mut self) {

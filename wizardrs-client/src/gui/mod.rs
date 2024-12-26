@@ -1,36 +1,53 @@
+use std::sync::mpsc;
+
 use crate::gui::app_page::host_page::HostPage;
 use crate::gui::app_page::join_page::JoinPage;
+use crate::gui::app_page::settings_page::SettingsPage;
 use crate::gui::app_page::AppPage;
+use crate::interaction::StateUpdate;
 use eframe::Frame;
 use egui::Context;
 use strum::IntoEnumIterator;
 
 pub(crate) mod app_page;
+pub(crate) mod handle_message;
+pub(crate) mod handle_state_update;
 
 pub struct App {
     current_page: AppPage,
     host_page: HostPage,
     join_page: JoinPage,
-    first_frame: bool, // set ppp on startup
+    settings_page: SettingsPage,
+    first_frame: bool,                     // used set zoom on startup
+    state_rx: mpsc::Receiver<StateUpdate>, // receive state updates from backend
+    state_tx: mpsc::Sender<StateUpdate>,   // used to pass to tasks to send state updates to self
 }
 
 impl App {
     pub fn new() -> Self {
+        let (state_tx, state_rx) = mpsc::channel();
+
         Self {
             current_page: AppPage::Host,
             host_page: HostPage::new(),
             join_page: JoinPage::new(),
+            settings_page: SettingsPage {},
             first_frame: true,
+            state_rx,
+            state_tx,
         }
     }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+        // set zoom on startup
         if self.first_frame {
-            ctx.set_zoom_factor(1.5);
+            ctx.set_zoom_factor(1.2);
             self.first_frame = false;
         }
+
+        self.update_state();
 
         // Top Panel
         egui::TopBottomPanel::top("top_panel")
@@ -54,6 +71,7 @@ impl eframe::App for App {
         match self.current_page {
             AppPage::Host => self.render_host_page(ctx, frame),
             AppPage::Join => self.render_join_page(ctx, frame),
+            AppPage::Settings => self.render_settings_page(ctx, frame),
         }
 
         ctx.request_repaint();

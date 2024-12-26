@@ -2,16 +2,21 @@ use crate::error::*;
 use crate::server::WizardServer;
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::{broadcast, mpsc, watch};
+use tokio::sync::{broadcast, mpsc, watch, RwLock};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{accept_async, WebSocketStream};
 use tracing::debug;
 use uuid::Uuid;
+use wizardrs_core::card::Card;
 use wizardrs_core::client_event::ClientEvent;
 use wizardrs_core::server_event::ServerEvent;
+
+pub(crate) mod handle_broadcast;
+pub(crate) mod handle_client_event;
 
 pub(crate) struct WizardClient {
     pub username: String,
@@ -19,6 +24,11 @@ pub(crate) struct WizardClient {
     server: Arc<WizardServer>,
     event_tx: mpsc::UnboundedSender<ServerEvent>, // send events to client
     leave_tx: watch::Sender<bool>,                // used to notify tasks to shut down
+
+    pub hand: Arc<RwLock<Vec<Card>>>,
+    pub bid: Arc<AtomicU8>,
+    pub won_tricks: Arc<AtomicU8>,
+    pub ready: Arc<AtomicBool>,
 }
 
 impl WizardClient {
@@ -71,6 +81,11 @@ impl WizardClient {
             event_tx,
             leave_tx,
             server,
+
+            hand: Arc::new(RwLock::new(Vec::new())),
+            bid: Arc::new(AtomicU8::new(0)),
+            won_tricks: Arc::new(AtomicU8::new(0)),
+            ready: Arc::new(AtomicBool::new(false)),
         });
 
         client.spawn_event_receiver(read);
@@ -144,7 +159,7 @@ impl WizardClient {
             });
         }
 
-        // forward events from channels to event sender
+        // forward events from br to event sender
         {
             let client = self.clone();
             let mut leave_rx = self.leave_tx.subscribe();
@@ -155,7 +170,7 @@ impl WizardClient {
                 let c = client.clone();
                 let broadcast_fut = async move {
                     while let Ok(event) = broadcast_rx.recv().await {
-                        c.send_event(event);
+                        c.handle_broadcast_event(event).await;
                     }
                 };
 
@@ -170,10 +185,12 @@ impl WizardClient {
         }
     }
 
+    /// Sends a ServerEvent to the remote client.
     pub fn send_event(self: &Arc<Self>, event: ServerEvent) {
         let _ = self.event_tx.send(event);
     }
 
+    /// Shuts down websocket and removes self from server.
     pub async fn disconnect(self: &Arc<Self>) {
         // tell tasks to shut down
         self.leave_tx.send_replace(true);
@@ -182,31 +199,65 @@ impl WizardClient {
         self.server.remove_client(self.clone()).await;
     }
 
-    // Handle events being sent from the client to the server
-    async fn handle_client_event(self: &Arc<Self>, event: ClientEvent) {
-        match event {
-            ClientEvent::SetUsername { .. } => {}
-            ClientEvent::SendChatMessage { content } => {
-                let event = ServerEvent::PlayerChatMessage {
-                    username: self.username.clone(),
-                    uuid: self.uuid,
-                    content,
-                };
-                self.server.broadcast_event(event);
-            }
-        }
+    /// Clears hand, bid, and won_tricks.
+    pub async fn clean_data(self: &Arc<Self>) {
+        self.hand.write().await.clear();
+        self.won_tricks.store(0, Ordering::SeqCst);
+        self.bid.store(0, Ordering::SeqCst);
     }
 
-    // Handle events being broadcast from the server to the client
-    async fn handle_broadcast_event(self: &Arc<Self>, event: ServerEvent) {
-        match event {
-            ServerEvent::UpdatePlayerList { .. } => {
-                self.send_event(event);
-            }
-            ServerEvent::SetUUID { .. } => {},
-            ServerEvent::PlayerChatMessage { .. } => {
-                self.send_event(event);
-            }
-        }
+    /// Sets hand of self and sends it to the remote client
+    pub async fn set_hand(self: &Arc<Self>, hand: Vec<Card>) {
+        *self.hand.write().await = hand.clone();
+
+        let event = ServerEvent::SetHand { hand };
+        self.send_event(event);
+    }
+
+    /// Checks whether self is the last player to bid in current round.
+    pub async fn is_last_player_to_bid(self: &Arc<Self>) -> bool {
+        let current_round = self.server.current_round.load(Ordering::SeqCst);
+        let num_players = self.server.num_players().await;
+        let self_index = self
+            .server
+            .clients
+            .read()
+            .await
+            .get_index_of(&self.uuid)
+            .expect("self UUID should always be in server client list");
+
+        // In round 1, player index 0 is the dealer and the last player to bid.
+        // So if the player index == round - 1 then the player is the last player to bid but for larger rounds the bidder jumps from e.g. player index 3 to 0.
+        // To avoid this problem we modulo the current round with the number of players.
+        // If (current_round as usize % num_players) == 0 -> num_players is the index as 0 - 1 "underflows" to num_players
+        let last_index = if (current_round as usize % num_players) == 0 {
+            num_players - 1
+        } else {
+            (current_round as usize % num_players) - 1
+        };
+        self_index == last_index
+    }
+
+    // Plays a card from the own hand and broadcasts it to all clients.
+    pub async fn play_card(self: &Arc<Self>, card: Card) {
+        // remove card from hand
+        self.hand
+            .write()
+            .await
+            .retain(|hand_card| *hand_card != card);
+
+        // add card to current trick
+        self.server
+            .played_cards
+            .write()
+            .await
+            .push((card, self.clone()));
+
+        // broadcast play card event
+        let event = ServerEvent::PlayerPlayCard {
+            uuid: self.uuid,
+            card,
+        };
+        self.server.broadcast_event(event);
     }
 }

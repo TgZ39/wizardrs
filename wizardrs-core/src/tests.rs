@@ -1,34 +1,109 @@
+use crate::card::color::CardColor;
 use crate::card::color::CardColor::*;
 use crate::card::Card;
+use crate::trump_suit::TrumpSuit;
+use crate::utils::evaluate_trick_winner;
+use uuid::Uuid;
 
-// Generates a test case for comparing cards
-macro_rules! test_cards {
-    ($test_number:expr, $a_value:expr, $a_color:expr, $b_value:expr, $b_color:expr, $trump_color:expr, $expected:expr) => {
-        paste::paste! {
-            #[test]
-            fn [<card_compare_ $test_number>] () {
-                let a = Card::new($a_value, $a_color).unwrap();
-                let b = Card::new($b_value, $b_color).unwrap();
-
-                assert_eq!(a.beats(&b, $trump_color), $expected);
-            }
-        }
-    };
+fn with_uuid(cards: Vec<Card>) -> Vec<(Uuid, Card)> {
+    cards
+        .into_iter()
+        .map(|card| (Uuid::new_v4(), card))
+        .collect()
 }
 
-test_cards!(1, 1, Blue, 1, Blue, Blue, true);
-test_cards!(2, 1, Blue, 2, Blue, Blue, false);
-test_cards!(3, 2, Blue, 1, Blue, Blue, true);
-test_cards!(4, 0, Blue, 0, Blue, Blue, true);
-test_cards!(5, 1, Blue, 0, Blue, Blue, true);
-test_cards!(6, 0, Blue, 1, Blue, Blue, false);
-test_cards!(7, 14, Blue, 13, Blue, Blue, true);
-test_cards!(8, 13, Blue, 14, Blue, Blue, false);
-test_cards!(9, 1, Blue, 1, Red, Blue, true);
-test_cards!(10, 1, Blue, 1, Red, Red, false);
-test_cards!(11, 1, Blue, 1, Red, Green, true);
-test_cards!(12, 1, Blue, 2, Red, Green, false);
-test_cards!(13, 14, Blue, 1, Red, Red, true);
-test_cards!(14, 1, Blue, 14, Red, Blue, false);
-test_cards!(15, 1, Blue, 0, Red, Red, true);
-test_cards!(16, 0, Blue, 1, Red, Blue, false);
+fn new_card(value: u8, color: CardColor) -> Card {
+    Card::new(value, color).unwrap()
+}
+
+#[test]
+fn eval_winner_1() {
+    let cards = vec![
+        new_card(1, Blue),
+        new_card(2, Blue),
+        new_card(14, Blue),
+        new_card(3, Blue),
+    ];
+    let cards = with_uuid(cards);
+    let actual = cards[2];
+    let eval = evaluate_trick_winner(&cards[..], None);
+
+    assert_eq!(actual, eval);
+}
+
+#[test]
+fn eval_winner_2() {
+    let cards = vec![
+        new_card(1, Blue),
+        new_card(2, Blue),
+        new_card(14, Red),
+        new_card(3, Blue),
+    ];
+    let cards = with_uuid(cards);
+    let actual = cards[2];
+    let eval = evaluate_trick_winner(&cards[..], Some(Blue));
+
+    assert_eq!(actual, eval);
+}
+
+#[test]
+fn eval_winner_3() {
+    let cards = vec![
+        new_card(1, Blue),
+        new_card(14, Red),
+        new_card(14, Blue),
+        new_card(4, Blue),
+    ];
+    let cards = with_uuid(cards);
+    let actual = cards[1];
+    let eval = evaluate_trick_winner(&cards[..], Some(Blue));
+
+    assert_eq!(actual, eval);
+}
+
+#[test]
+fn eval_winner_4() {
+    let cards = vec![
+        new_card(1, Blue),
+        new_card(14, Red),
+        new_card(14, Blue),
+        new_card(4, Blue),
+    ];
+    let cards = with_uuid(cards);
+    let actual = cards[1];
+    let eval = evaluate_trick_winner(&cards[..], None);
+
+    assert_eq!(actual, eval);
+}
+
+#[test]
+fn eval_winner_5() {
+    let cards = vec![
+        new_card(1, Blue),
+        new_card(10, Blue),
+        new_card(9, Blue),
+        new_card(4, Blue),
+    ];
+    let cards = with_uuid(cards);
+    let actual = cards[1];
+    let eval = evaluate_trick_winner(&cards[..], Some(Blue));
+
+    assert_eq!(actual, eval);
+}
+
+#[test]
+fn eval_winner_6() {
+    let cards = vec![
+        new_card(1, Blue),
+        new_card(10, Blue),
+        new_card(9, Blue),
+        new_card(11, Red),
+    ];
+    let cards = with_uuid(cards);
+    let actual = cards[1];
+    let eval = evaluate_trick_winner(&cards[..], None);
+
+    assert_eq!(actual, eval);
+}
+
+// TODO add more test cases

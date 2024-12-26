@@ -1,6 +1,8 @@
 use crate::error::*;
+use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CardValue {
     Fool,
     Simple(u8),
@@ -22,6 +24,16 @@ impl CardValue {
             CardValue::Fool => 0,
             CardValue::Simple(value) => *value,
             CardValue::Wizard => 14,
+        }
+    }
+}
+
+impl Display for CardValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CardValue::Fool => write!(f, "Fool"),
+            CardValue::Simple(value) => write!(f, "{value}"),
+            CardValue::Wizard => write!(f, "Wizard"),
         }
     }
 }

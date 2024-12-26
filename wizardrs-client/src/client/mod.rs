@@ -1,5 +1,4 @@
 use crate::error::*;
-use crate::state::player::Player;
 use crate::state::GameState;
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
@@ -13,6 +12,9 @@ use uuid::Uuid;
 use wizardrs_core::client_event::ClientEvent;
 use wizardrs_core::server_event::ServerEvent;
 
+pub(crate) mod handle_server_event;
+
+#[derive(Debug)]
 pub struct WizardClient {
     pub username: String,
     pub uuid: Uuid,
@@ -93,6 +95,13 @@ impl WizardClient {
             let c = client.clone();
             let send_fut = async move {
                 while let Some(event) = event_rx.recv().await {
+                    // TODO write MessageHandler for WizardClient
+                    // user has selected trump color, now inform client that he doesnt have to choose a color anymore
+                    if let ClientEvent::SetTrumpColor { .. } = event {
+                        c.game_state.write().await.set_select_trump_color(false);
+                        c.update_game_state().await;
+                    }
+
                     let json = serde_json::to_string(&event).unwrap();
                     let msg = Message::text(json);
 
@@ -142,30 +151,6 @@ impl WizardClient {
             client.shutdown().await;
             client.disconnect();
         });
-    }
-
-    /// Handle events being sent from the server to the client
-    async fn handle_server_event(self: &Arc<Self>, event: ServerEvent) {
-        match event {
-            ServerEvent::UpdatePlayerList { players } => {
-                let players = players
-                    .into_iter()
-                    .map(|(username, uuid)| Player {
-                        username,
-                        uuid,
-                        bid: None,
-                    })
-                    .collect::<Vec<_>>();
-
-                self.game_state.write().await.set_players(players);
-                self.update_game_state().await;
-            }
-            ServerEvent::SetUUID { .. } => {}
-            ServerEvent::PlayerChatMessage { .. } => {
-                self.game_state.write().await.push_event_log(event);
-                self.update_game_state().await;
-            }
-        }
     }
 
     async fn shutdown(self: &Arc<Self>) {

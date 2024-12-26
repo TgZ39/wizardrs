@@ -1,95 +1,33 @@
-use crate::client::WizardClient;
 use crate::gui::App;
 use crate::state::GameState;
+use crate::{client::WizardClient, interaction::GuiMessage};
 use eframe::Frame;
 use egui::Context;
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 
 pub(crate) mod game_page;
 
 pub struct JoinPage {
-    game_state: Option<GameState>,
-    state_rx: Option<mpsc::Receiver<GameState>>,
+    pub game_state: Option<GameState>,
     url: String,
     username: String,
-    is_loading: bool,
-    get_client_rx: Option<mpsc::Receiver<Option<Arc<WizardClient>>>>,
-    client: Option<Arc<WizardClient>>,
+    pub is_loading: bool,
+    pub client: Option<Arc<WizardClient>>,
     chat_input: String,
+    pub ready_clicked_before: bool, // whether the ready button has been clicked already
 }
 
 impl JoinPage {
     pub fn new() -> Self {
         Self {
             game_state: None,
-            state_rx: None,
             url: String::new(),
             username: String::new(),
             is_loading: false,
-            get_client_rx: None,
             client: None,
             chat_input: String::new(),
+            ready_clicked_before: false,
         }
-    }
-
-    fn update_game_state(&mut self) {
-        if let Some(state_rx) = &self.state_rx {
-            while let Ok(state) = state_rx.try_recv() {
-                self.game_state = Some(state);
-            }
-        }
-    }
-
-    fn get_url(&self) -> String {
-        match self.url.is_empty() {
-            true => String::from("ws://127.0.0.1:8144"),
-            false => self.url.clone(),
-        }
-    }
-
-    fn get_username(&self) -> Option<String> {
-        if self.username.is_empty() {
-            None
-        } else {
-            Some(self.username.clone())
-        }
-    }
-
-    fn get_client(&mut self) {
-        if self.is_loading && self.get_client_rx.is_some() {
-            if let Some(recv) = &self.get_client_rx {
-                while let Ok(Some(client)) = recv.try_recv() {
-                    self.client = Some(client);
-                    self.is_loading = false;
-                }
-            }
-        }
-    }
-
-    fn join_game(&mut self) {
-        if let Some(client) = &self.client {
-            client.disconnect();
-        }
-
-        let url = self.get_url();
-        let username = if let Some(username) = self.get_username() {
-            username
-        } else {
-            return;
-        };
-
-        let (send, recv) = mpsc::channel::<Option<Arc<WizardClient>>>();
-        let (state_tx, state_rx) = mpsc::channel();
-
-        self.is_loading = true;
-        self.get_client_rx = Some(recv);
-        self.state_rx = Some(state_rx);
-
-        // create client
-        tokio::spawn(async move {
-            let client = WizardClient::new(url, username, state_tx).await.ok();
-            send.send(client).unwrap();
-        });
     }
 
     fn leave_game(&mut self) {
@@ -101,17 +39,12 @@ impl JoinPage {
         }
 
         self.game_state = None;
-        self.get_client_rx = None;
-        self.state_rx = None;
         self.client = None;
     }
 }
 
 impl App {
     pub fn render_join_page(&mut self, ctx: &Context, frame: &mut Frame) {
-        self.join_page.get_client();
-        self.join_page.update_game_state();
-
         // check if server shut down
         {
             let mut shutdown = false;
@@ -146,17 +79,40 @@ impl App {
                     ui.separator();
 
                     // join button
-                    let enabled = self.join_page.get_username().is_some();
+                    let enabled = !self.join_page.username.is_empty();
                     ui.add_enabled_ui(enabled, |ui| {
                         if ui.button("Join Game").clicked() {
-                            self.join_page.join_game();
+                            self.join_game();
                         }
                     });
                 });
             }
             true => {
-                self.join_page.render_game_page(ctx, frame);
+                // client has joined a game
+                self.render_game_page(ctx, frame);
             }
         }
+    }
+
+    /// Tries to join a lobby.
+    fn join_game(&mut self) {
+        // disconnect client if it already exists
+        if let Some(client) = &self.join_page.client {
+            client.disconnect();
+        }
+
+        let url = match self.join_page.url.is_empty() {
+            true => "ws://127.0.0.1:8144".to_string(),
+            false => self.join_page.url.to_owned(),
+        };
+        let username = match self.join_page.username.is_empty() {
+            true => return,
+            false => self.join_page.username.to_owned(),
+        };
+
+        self.join_page.is_loading = true;
+
+        let message = GuiMessage::JoinGame { url, username };
+        self.handle_message(message);
     }
 }
