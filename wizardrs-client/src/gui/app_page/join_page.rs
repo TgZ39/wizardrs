@@ -14,7 +14,6 @@ pub struct JoinPage {
     pub is_loading: bool,
     pub client: Option<Arc<WizardClient>>,
     chat_input: String,
-    pub ready_clicked_before: bool, // whether the ready button has been clicked already
 }
 
 impl JoinPage {
@@ -26,7 +25,6 @@ impl JoinPage {
             is_loading: false,
             client: None,
             chat_input: String::new(),
-            ready_clicked_before: false,
         }
     }
 

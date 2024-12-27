@@ -37,4 +37,11 @@ pub enum ServerEvent {
         card: Card,
     },
     ClearPlayedCards,
+    WaitingForReady {
+        waiting: bool,
+    },
+    PlayerReady {
+        uuid: Uuid,
+        ready: bool,
+    },
 }

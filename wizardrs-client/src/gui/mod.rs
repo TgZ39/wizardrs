@@ -18,7 +18,6 @@ pub struct App {
     host_page: HostPage,
     join_page: JoinPage,
     settings_page: SettingsPage,
-    first_frame: bool,                     // used set zoom on startup
     state_rx: mpsc::Receiver<StateUpdate>, // receive state updates from backend
     state_tx: mpsc::Sender<StateUpdate>,   // used to pass to tasks to send state updates to self
 }
@@ -32,7 +31,6 @@ impl App {
             host_page: HostPage::new(),
             join_page: JoinPage::new(),
             settings_page: SettingsPage {},
-            first_frame: true,
             state_rx,
             state_tx,
         }
@@ -41,12 +39,6 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
-        // set zoom on startup
-        if self.first_frame {
-            ctx.set_zoom_factor(1.2);
-            self.first_frame = false;
-        }
-
         self.update_state();
 
         // Top Panel

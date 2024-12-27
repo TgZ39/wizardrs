@@ -4,4 +4,5 @@ use uuid::Uuid;
 pub struct Player {
     pub username: String,
     pub uuid: Uuid,
+    pub is_ready: bool,
 }

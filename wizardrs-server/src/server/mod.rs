@@ -359,8 +359,8 @@ impl WizardServer {
         ) {
             // set dealer to player on turn
             let dealer = self.get_dealer().await;
-            let dealer_index = self.get_index(dealer.uuid).await.unwrap();
-            self.set_player_on_turn(dealer_index as u8).await;
+            let dealer_index = dealer.index().await;
+            self.set_player_on_turn(dealer_index).await;
 
             // notify dealer to select trump color
             let event = ServerEvent::RequestSelectTrumpColor;
@@ -479,11 +479,6 @@ impl WizardServer {
             .1;
 
         client.clone()
-    }
-
-    /// Returns the index of the player with the given UUID.
-    pub async fn get_index(self: &Arc<Self>, uuid: Uuid) -> Option<usize> {
-        self.clients.read().await.get_index_of(&uuid)
     }
 
     /// Returns the player given the index

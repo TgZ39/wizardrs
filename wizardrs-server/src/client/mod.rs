@@ -238,7 +238,7 @@ impl WizardClient {
         self_index == last_index
     }
 
-    // Plays a card from the own hand and broadcasts it to all clients.
+    /// Plays a card from the own hand and broadcasts it to all clients.
     pub async fn play_card(self: &Arc<Self>, card: Card) {
         // remove card from hand
         self.hand
@@ -259,5 +259,15 @@ impl WizardClient {
             card,
         };
         self.server.broadcast_event(event);
+    }
+
+    /// Returns the index of self in server
+    pub async fn index(self: &Arc<Self>) -> u8 {
+        self.server
+            .clients
+            .read()
+            .await
+            .get_index_of(&self.uuid)
+            .unwrap() as u8
     }
 }

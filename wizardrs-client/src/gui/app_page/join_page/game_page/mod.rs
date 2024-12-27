@@ -1,7 +1,7 @@
 use crate::gui::App;
 use crate::interaction::GuiMessage;
 use eframe::Frame;
-use egui::{Context, Image, Ui, Vec2};
+use egui::{Context, Image, RichText, Ui, Vec2};
 use egui_extras::Column;
 use std::ops::Deref;
 use tracing::error;
@@ -35,8 +35,8 @@ impl App {
     pub fn side_panel(&mut self, ctx: &Context, _frame: &mut Frame) {
         egui::SidePanel::left("players")
             .resizable(true)
-            .default_width(200.0)
-            .width_range(150.0..=250.0)
+            .default_width(250.0)
+            .width_range(150.0..=300.0)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.heading("Players");
@@ -45,31 +45,40 @@ impl App {
 
                 if let Some(state) = &self.join_page.game_state {
                     for player in &state.players {
-                        let bid_won_tricks_visualisation =
-                            match state.scoreboard.get_entry(player.uuid) {
-                                Some((_, bid, won_tricks)) => {
-                                    if let Some(bid) = bid {
-                                        format!("({}/{})", won_tricks, bid)
-                                    } else {
-                                        String::new()
-                                    }
-                                }
-                                None => String::new(),
-                            };
+                        let label = {
+                            let mut out = String::new();
+                            // username
+                            out.push_str(&player.username);
 
-                        if state.get_player_on_turn().uuid == player.uuid
+                            // won tricks vs bid tricks
+                            if let Some((_score, bid, won_tricks)) =
+                                state.scoreboard.get_entry(player.uuid)
+                            {
+                                if let Some(bid) = bid {
+                                    out.push_str(&format!(" [{}/{}]", won_tricks, bid));
+                                }
+                            }
+
+                            // ready or not ready
+                            if state.waiting_for_ready {
+                                match player.is_ready {
+                                    true => out.push_str(" [Ready]"),
+                                    false => out.push_str(" [Not Ready]"),
+                                }
+                            }
+
+                            out
+                        };
+                        if state.get_player_on_turn().uuid == player.uuid // check if player is on turn
+                            && !state.waiting_for_ready // check if we are waiting for ready
                             && state.game_phase != GamePhase::Lobby
                             && state.game_phase != GamePhase::Finished
                         {
-                            // player is currently on turn
-                            let label =
-                                format!("{} {}", player.username, bid_won_tricks_visualisation);
-                            ui.strong(label);
+                            let label = egui::Label::new(RichText::new(label).strong().underline());
+                            ui.add(label);
                         } else {
-                            // player is currently not on turn
-                            let label =
-                                format!("{} {}", player.username, bid_won_tricks_visualisation);
-                            ui.label(label);
+                            let label = egui::Label::new(RichText::new(label));
+                            ui.add(label);
                         }
                     }
                 }
@@ -196,38 +205,30 @@ impl App {
             });
 
         // Ready button
-        ui.with_layout(egui::Layout::bottom_up(egui::Align::BOTTOM), |ui| {
-            if let Some(state) = &self.join_page.game_state {
-                let button_enabled = match state.game_phase {
-                    GamePhase::Lobby => false,
-                    GamePhase::Bidding => false,
-                    GamePhase::Playing => {
-                        let num_played_cards = state.played_cards.len();
-                        let num_players = state.players.len();
-
-                        // check if all cards of a trick have been played
-                        num_played_cards == num_players
+        ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+            if let (Some(state), Some(client)) =
+                (&self.join_page.game_state, &self.join_page.client)
+            {
+                let button_enabled = {
+                    if let Some(self_player) = state.players.iter().find(|p| p.uuid == client.uuid)
+                    {
+                        state.waiting_for_ready && !self_player.is_ready
+                    } else {
+                        false
                     }
-                    GamePhase::Finished => false, // TODO
                 };
 
-                ui.add_enabled_ui(
-                    button_enabled && !self.join_page.ready_clicked_before,
-                    |ui| {
-                        let button = egui::Button::new("Ready")
-                            .min_size(Vec2::new(ui.available_size().x, 80.0));
+                ui.add_enabled_ui(button_enabled, |ui| {
+                    let button =
+                        egui::Button::new("Ready").min_size(Vec2::new(ui.available_size().x, 95.0));
 
-                        let resp = ui.add(button);
-
-                        if resp.clicked() {
-                            self.join_page.ready_clicked_before = true;
-
-                            // ready button clicked
-                            let message = GuiMessage::Ready;
-                            self.handle_message(message);
-                        }
-                    },
-                );
+                    let resp = ui.add(button);
+                    if resp.clicked() {
+                        // ready button clicked
+                        let message = GuiMessage::Ready;
+                        self.handle_message(message);
+                    }
+                });
             }
         });
     }
@@ -328,6 +329,12 @@ impl App {
                         if let (Some(state), Some(client)) =
                             (&self.join_page.game_state, &self.join_page.client)
                         {
+                            // check if all cards have already been played
+                            // this can happen if we are waiting for everyone ready
+                            if state.waiting_for_ready {
+                                return false;
+                            }
+
                             // check if all cards have already been played
                             // this can happen if we are waiting for everyone ready
                             if state.played_cards.len() >= state.players.len() {

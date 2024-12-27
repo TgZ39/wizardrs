@@ -22,6 +22,7 @@ pub struct GameState {
     pub scoreboard: ScoreBoard,
     pub player_on_turn: u8,
     pub self_select_trump_color: bool,
+    pub waiting_for_ready: bool,
 }
 
 impl GameState {
@@ -37,6 +38,7 @@ impl GameState {
             scoreboard: ScoreBoard::new(vec![]),
             player_on_turn: 0,
             self_select_trump_color: false,
+            waiting_for_ready: false,
         }
     }
 

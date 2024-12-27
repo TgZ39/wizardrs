@@ -13,6 +13,7 @@ impl WizardClient {
                     .map(|(username, uuid)| Player {
                         username: username.clone(),
                         uuid: *uuid,
+                        is_ready: false,
                     })
                     .collect();
 
@@ -63,6 +64,23 @@ impl WizardClient {
             }
             ServerEvent::ClearPlayedCards => {
                 self.game_state.write().await.played_cards.clear();
+                self.update_game_state().await;
+            }
+            ServerEvent::WaitingForReady { waiting } => {
+                self.game_state.write().await.waiting_for_ready = waiting;
+                self.update_game_state().await;
+            }
+            ServerEvent::PlayerReady { uuid, ready } => {
+                self.game_state
+                    .write()
+                    .await
+                    .players
+                    .iter_mut()
+                    .for_each(|player| {
+                        if player.uuid == uuid {
+                            player.is_ready = ready;
+                        }
+                    });
                 self.update_game_state().await;
             }
         }

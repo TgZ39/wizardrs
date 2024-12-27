@@ -16,9 +16,6 @@ impl App {
                 }
                 StateUpdate::GameState(game_state) => {
                     self.join_page.game_state = game_state;
-
-                    // reset ready button
-                    self.join_page.ready_clicked_before = false;
                 }
             }
         }

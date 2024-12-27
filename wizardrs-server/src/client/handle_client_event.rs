@@ -88,7 +88,7 @@ impl WizardClient {
 
                         // set player on turn to first bidder because he is the player left of the dealer
                         let first_bidder = self.server.get_first_bidder().await;
-                        let index = self.server.get_index(first_bidder.uuid).await.unwrap();
+                        let index = first_bidder.index().await;
                         self.server.set_player_on_turn(index as u8).await;
                     } else {
                         warn!("MakeBid: {bid} is not last id by {}", self.username);
@@ -125,8 +125,7 @@ impl WizardClient {
 
                     // set player on turn to the first player to bid
                     let first_bidder = self.server.get_first_bidder().await;
-                    let index_first_bidder =
-                        self.server.get_index(first_bidder.uuid).await.unwrap();
+                    let index_first_bidder = first_bidder.index().await;
 
                     self.server
                         .set_player_on_turn(index_first_bidder as u8)
@@ -158,13 +157,13 @@ impl WizardClient {
 
                     let is_last_player_on_turn = self.server.num_players().await
                         == self.server.played_cards.read().await.len();
-                    if is_last_player_on_turn && self.server.everyone_ready().await {
+                    if is_last_player_on_turn {
+                        // finish the trick and wait for everyone ready before starting the next round
+
                         warn!(
                             "PlayCard: {card} is last player on turn by {}",
                             self.username
                         );
-                        // last card was played
-                        // finish trick
 
                         // evaluate winner
                         let cards = self
@@ -187,8 +186,61 @@ impl WizardClient {
                             .increment_won_tricks(winner_uuid);
                         self.server.update_scoreboard().await;
 
+                        // broadcast waiting for ready
+                        let event = ServerEvent::WaitingForReady { waiting: true };
+                        self.server.broadcast_event(event);
+                    } else {
+                        warn!(
+                            "PlayCard: {card} is not last player on turn by {}",
+                            self.username
+                        );
+                        // set next player to play card
+                        self.server.set_player_on_turn(self.index().await + 1).await;
+                    }
+                }
+            }
+            ClientEvent::Ready => {
+                warn!("Ready received by {}", self.username);
+
+                self.ready.store(true, Ordering::SeqCst);
+                // broadcast ready event
+                let event = ServerEvent::PlayerReady {
+                    uuid: self.uuid,
+                    ready: true,
+                };
+                self.server.broadcast_event(event);
+
+                // check if everyone is ready before proceeding
+                if !self.server.everyone_ready().await {
+                    // not everyone is ready
+                    warn!("Ready: not everyone ready by {}", self.username);
+                    return;
+                }
+
+                let game_phase = self.server.game_phase.read().await.clone();
+                match game_phase {
+                    GamePhase::Lobby => {}
+                    GamePhase::Bidding => {}
+                    GamePhase::Playing => {
+                        warn!("Ready: playing phase ready by {}", self.username);
+                        // the trick has already been evaluated
+                        // now we just start the next trick or finish the game
+
+                        // evaluate winner
+                        let cards = self
+                            .server
+                            .played_cards
+                            .read()
+                            .await
+                            .iter()
+                            .map(|(card, client)| (client.uuid, card.to_owned()))
+                            .collect::<Vec<_>>();
+                        let trump_color = self.server.trump_suit.read().await.color();
+
+                        let (winner_uuid, _) = evaluate_trick_winner(&cards[..], trump_color);
+
                         if self.server.is_last_trick().await {
-                            warn!("PlayCard: {card} is last trick by {}", self.username);
+                            warn!("Ready: is last trick {}", self.username);
                             // it was the last trick
                             // finish round
 
@@ -206,7 +258,7 @@ impl WizardClient {
                                 self.server.start_round(current_round + 1).await;
                             }
                         } else {
-                            warn!("PlayCard: {card} is not last trick by {}", self.username);
+                            warn!("Ready: is not last trick by {}", self.username);
                             // start next trick
                             self.server.current_trick.fetch_add(1, Ordering::SeqCst);
 
@@ -217,93 +269,34 @@ impl WizardClient {
                             self.server.broadcast_event(event);
 
                             // set player on turn to winner of previous trick
-                            let index = self.server.get_index(winner_uuid).await.unwrap();
+                            let index = self
+                                .server
+                                .clients
+                                .read()
+                                .await
+                                .get_index_of(&winner_uuid)
+                                .unwrap();
                             self.server.set_player_on_turn(index as u8).await;
                         }
-                    } else {
-                        warn!(
-                            "PlayCard: {card} is not last player on turn by {}",
-                            self.username
-                        );
-                        // set next player to play card
-                        self.server
-                            .set_player_on_turn(
-                                self.server.get_index(self.uuid).await.unwrap() as u8 + 1,
-                            )
-                            .await;
                     }
+                    GamePhase::Finished => {}
                 }
-            }
-            ClientEvent::Ready => {
-                warn!("Ready received by {}", self.username);
 
-                self.ready.store(true, Ordering::SeqCst);
-
-                let is_last_player_on_turn =
-                    self.server.num_players().await == self.server.played_cards.read().await.len();
-                if is_last_player_on_turn && self.server.everyone_ready().await {
-                    // last card was played
-                    // finish trick
-
-                    // evaluate winner
-                    let cards = self
-                        .server
-                        .played_cards
-                        .read()
-                        .await
-                        .iter()
-                        .map(|(card, client)| (client.uuid, card.to_owned()))
-                        .collect::<Vec<_>>();
-                    let trump_color = self.server.trump_suit.read().await.color();
-
-                    let (winner_uuid, _) = evaluate_trick_winner(&cards[..], trump_color);
-
-                    // update scoreboard
-                    self.server
-                        .scoreboard
-                        .write()
-                        .await
-                        .increment_won_tricks(winner_uuid);
-                    self.server.update_scoreboard().await;
-
-                    if self.server.is_last_trick().await {
-                        // it was the last trick
-                        // finish round
-
-                        // evaluate scores
-                        self.server.scoreboard.write().await.apply_scores();
-                        self.server.update_scoreboard().await;
-
-                        let current_round = self.server.current_round.load(Ordering::SeqCst);
-
-                        // check if it was the last round
-                        if current_round == self.server.max_rounds().await.unwrap() {
-                            // TODO finish game
-                        } else {
-                            // more rounds need to be played
-                            self.server.start_round(current_round + 1).await;
-                        }
-                    } else {
-                        // start next trick
-                        self.server.current_trick.fetch_add(1, Ordering::SeqCst);
-
-                        // clear played cards
-                        self.server.played_cards.write().await.clear();
-                        // broadcast clear cards
-                        let event = ServerEvent::ClearPlayedCards;
-                        self.server.broadcast_event(event);
-
-                        // set player on turn to winner of previous trick
-                        let index = self.server.get_index(winner_uuid).await.unwrap();
-                        self.server.set_player_on_turn(index as u8).await;
-                    }
-                }
+                warn!("Ready: resetting by {}", self.username);
+                // broadcast that your is no request to be ready anymore
+                let event = ServerEvent::WaitingForReady { waiting: false };
+                self.server.broadcast_event(event);
 
                 // reset everyone ready if everyone was ready
-                if self.server.everyone_ready().await {
-                    for client in self.server.clients.read().await.values() {
-                        client.ready.store(false, Ordering::SeqCst);
-                    }
+                for client in self.server.clients.read().await.values() {
+                    client.ready.store(false, Ordering::SeqCst);
+
+                    // broadcast ready event
+                    let event = ServerEvent::PlayerReady {
+                        uuid: client.uuid,
+                        ready: false,
+                    };
+                    self.server.broadcast_event(event);
                 }
             }
         }

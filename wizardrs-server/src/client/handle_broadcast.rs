@@ -37,6 +37,12 @@ impl WizardClient {
             ServerEvent::ClearPlayedCards => {
                 self.send_event(event);
             }
+            ServerEvent::WaitingForReady { .. } => {
+                self.send_event(event);
+            }
+            ServerEvent::PlayerReady { .. } => {
+                self.send_event(event);
+            }
         }
     }
 }
