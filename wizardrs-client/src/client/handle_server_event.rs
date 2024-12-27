@@ -1,6 +1,8 @@
 use crate::client::WizardClient;
 use crate::state::player::Player;
 use std::sync::Arc;
+use wizardrs_core::card::color::CardColor;
+use wizardrs_core::card::value::CardValue;
 use wizardrs_core::server_event::ServerEvent;
 
 impl WizardClient {
@@ -29,7 +31,24 @@ impl WizardClient {
                 self.game_state.write().await.set_game_phase(phase);
                 self.update_game_state().await;
             }
-            ServerEvent::SetHand { hand } => {
+            ServerEvent::SetHand { mut hand } => {
+                // sort hand
+                hand.sort_by_key(|card| {
+                    let color_score = match card.color {
+                        CardColor::Blue => 0,
+                        CardColor::Red => 100,
+                        CardColor::Green => 200,
+                        CardColor::Yellow => 300,
+                    };
+                    let value_score = match card.value {
+                        CardValue::Fool => 14,
+                        CardValue::Simple(value) => 14 - value as u32,
+                        CardValue::Wizard => 0,
+                    };
+
+                    color_score + value_score
+                });
+
                 self.game_state.write().await.set_hand(hand);
                 self.update_game_state().await;
             }

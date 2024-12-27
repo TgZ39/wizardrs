@@ -3,7 +3,6 @@ use crate::interaction::GuiMessage;
 use eframe::Frame;
 use egui::{Context, Image, Margin, RichText, Ui, Vec2};
 use egui_extras::Column;
-use std::ops::Deref;
 use tracing::error;
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
