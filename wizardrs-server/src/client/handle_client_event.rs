@@ -271,8 +271,6 @@ impl WizardClient {
                             // check if it was the last round
                             if current_round == self.server.max_rounds().await.unwrap() {
                                 debug!("Ready: finish round by {}", self.username);
-                                // TODO finish game
-
                                 // set game phase
                                 *self.server.game_phase.write().await = GamePhase::Finished;
                                 // broadcast game phase
