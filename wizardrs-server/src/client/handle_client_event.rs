@@ -6,6 +6,7 @@ use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
 use wizardrs_core::client_event::ClientEvent;
 use wizardrs_core::game_phase::GamePhase;
+use wizardrs_core::scoreboard::ScoreBoard;
 use wizardrs_core::server_event::ServerEvent;
 use wizardrs_core::trump_suit::TrumpSuit;
 use wizardrs_core::utils::evaluate_trick_winner;
@@ -217,6 +218,23 @@ impl WizardClient {
                     return;
                 }
 
+                let set_waiting_ready = |waiting: bool| {
+                    let event = ServerEvent::WaitingForReady { waiting };
+                    self.server.broadcast_event(event);
+                };
+                let reset_ready = async {
+                    for client in self.server.clients.read().await.values() {
+                        client.ready.store(false, Ordering::SeqCst);
+
+                        // broadcast ready event
+                        let event = ServerEvent::PlayerReady {
+                            uuid: client.uuid,
+                            ready: false,
+                        };
+                        self.server.broadcast_event(event);
+                    }
+                };
+
                 let game_phase = self.server.game_phase.read().await.clone();
                 match game_phase {
                     GamePhase::Lobby => {}
@@ -253,9 +271,21 @@ impl WizardClient {
                             // check if it was the last round
                             if current_round == self.server.max_rounds().await.unwrap() {
                                 // TODO finish game
+
+                                // set game phase
+                                *self.server.game_phase.write().await = GamePhase::Finished;
+                                // broadcast game phase
+                                let event = ServerEvent::SetGamePhase {
+                                    phase: GamePhase::Finished,
+                                };
+                                self.server.broadcast_event(event);
                             } else {
                                 // more rounds need to be played
                                 self.server.start_round(current_round + 1).await;
+
+                                // reset ready
+                                set_waiting_ready(false);
+                                reset_ready.await;
                             }
                         } else {
                             warn!("Ready: is not last trick by {}", self.username);
@@ -277,26 +307,58 @@ impl WizardClient {
                                 .get_index_of(&winner_uuid)
                                 .unwrap();
                             self.server.set_player_on_turn(index as u8).await;
+
+                            // reset ready
+                            set_waiting_ready(false);
+                            reset_ready.await;
                         }
                     }
-                    GamePhase::Finished => {}
-                }
+                    GamePhase::Finished => {
+                        // everyone is ready for the next game
+                        // full reset the lobby
 
-                warn!("Ready: resetting by {}", self.username);
-                // broadcast that your is no request to be ready anymore
-                let event = ServerEvent::WaitingForReady { waiting: false };
-                self.server.broadcast_event(event);
+                        // reset clients
+                        for client in self.server.clients.read().await.values() {
+                            client.clean_data().await;
+                        }
 
-                // reset everyone ready if everyone was ready
-                for client in self.server.clients.read().await.values() {
-                    client.ready.store(false, Ordering::SeqCst);
+                        // reset server
+                        self.server.played_cards.write().await.clear();
+                        let event = ServerEvent::ClearPlayedCards;
+                        self.server.broadcast_event(event);
 
-                    // broadcast ready event
-                    let event = ServerEvent::PlayerReady {
-                        uuid: client.uuid,
-                        ready: false,
-                    };
-                    self.server.broadcast_event(event);
+                        *self.server.game_phase.write().await = GamePhase::Lobby;
+                        let event = ServerEvent::SetGamePhase {
+                            phase: GamePhase::Lobby,
+                        };
+                        self.server.broadcast_event(event);
+
+                        self.server.current_round.store(0, Ordering::SeqCst);
+                        self.server.current_trick.store(0, Ordering::SeqCst);
+
+                        *self.server.trump_suit.write().await = TrumpSuit::None;
+                        let event = ServerEvent::SetTrumpSuit {
+                            trump_suit: TrumpSuit::None,
+                        };
+                        self.server.broadcast_event(event);
+
+                        self.server.set_player_on_turn(0).await;
+
+                        let players = self
+                            .server
+                            .clients
+                            .read()
+                            .await
+                            .values()
+                            .map(|client| (client.username.to_owned(), client.uuid))
+                            .collect();
+                        *self.server.scoreboard.write().await = ScoreBoard::new(players);
+                        self.server.update_scoreboard().await;
+
+                        // reset ready
+                        set_waiting_ready(false);
+                        reset_ready.await;
+                    }
                 }
             }
         }

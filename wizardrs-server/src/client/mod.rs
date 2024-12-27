@@ -201,6 +201,7 @@ impl WizardClient {
 
     /// Clears hand, bid, and won_tricks.
     pub async fn clean_data(self: &Arc<Self>) {
+        self.ready.store(false, Ordering::SeqCst);
         self.hand.write().await.clear();
         self.won_tricks.store(0, Ordering::SeqCst);
         self.bid.store(0, Ordering::SeqCst);

@@ -26,7 +26,7 @@ impl App {
                 GamePhase::Lobby => self.render_lobby_page(ctx, frame),
                 GamePhase::Bidding => self.render_bidding_page(ctx, frame),
                 GamePhase::Playing => self.render_playing_page(ctx, frame),
-                GamePhase::Finished => {}
+                GamePhase::Finished => self.render_playing_page(ctx, frame),
             }
         }
     }
@@ -251,6 +251,7 @@ impl App {
                                 .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
                                 .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
                             ui.add_sized(Vec2::new(120.0, 120.0 * 1.57), image);
+                            ui.label(card.color.to_string());
                         }
                         TrumpSuit::Color(card, color) => {
                             let image = Image::new(card.image())
