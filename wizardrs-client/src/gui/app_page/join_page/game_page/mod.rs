@@ -51,12 +51,10 @@ impl App {
                             out.push_str(&player.username);
 
                             // won tricks vs bid tricks
-                            if let Some((_score, bid, won_tricks)) =
+                            if let Some((_score, Some(bid), won_tricks)) =
                                 state.scoreboard.get_entry(player.uuid)
                             {
-                                if let Some(bid) = bid {
-                                    out.push_str(&format!(" [{}/{}]", won_tricks, bid));
-                                }
+                                out.push_str(&format!(" [{}/{}]", won_tricks, bid));
                             }
 
                             // ready or not ready
@@ -218,9 +216,10 @@ impl App {
                     }
                 };
 
+                ui.add_space(5.0);
                 ui.add_enabled_ui(button_enabled, |ui| {
                     let button =
-                        egui::Button::new("Ready").min_size(Vec2::new(ui.available_size().x, 95.0));
+                        egui::Button::new("Ready").min_size(Vec2::new(ui.available_size().x, 90.0));
 
                     let resp = ui.add(button);
                     if resp.clicked() {
@@ -234,7 +233,20 @@ impl App {
     }
 
     /// Renders the trump suit and the current trick.
-    pub fn render_top_bar(&self, ui: &mut Ui, _ctx: &Context, _frame: &mut Frame) {
+    pub fn render_top_bar(&mut self, ui: &mut Ui, _ctx: &Context, _frame: &mut Frame) {
+        let get_image_path = |card: &Card| {
+            if let Some(cache) = &self.image_cache {
+                cache.get_image_path(card)
+            } else {
+                None
+            }
+        };
+        let average_aspect_ratio = if let Some(cache) = &self.image_cache {
+            cache.average_aspect_ratio().unwrap_or(1.57)
+        } else {
+            1.57
+        };
+
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.heading("Trump Suit");
@@ -246,19 +258,48 @@ impl App {
                 if let Some(state) = &self.join_page.game_state {
                     match &state.trump_suit {
                         TrumpSuit::Card(card) => {
-                            let image = Image::new(card.image())
-                                .rounding(10.0)
-                                .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
-                                .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
-                            ui.add_sized(Vec2::new(120.0, 120.0 * 1.57), image);
+                            if let Some(path) = get_image_path(card) {
+                                let image = Image::new(path)
+                                    .rounding(10.0)
+                                    .max_size(Vec2::new(120.0, 120.0 * average_aspect_ratio)) // image aspect ratio is ~ 1:1.57
+                                    .fit_to_exact_size(Vec2::new(
+                                        120.0,
+                                        120.0 * average_aspect_ratio,
+                                    ));
+                                ui.add_sized(Vec2::new(120.0, 120.0 * average_aspect_ratio), image);
+                            } else {
+                                // button is always disabled
+                                let button = egui::Button::new(card.to_string())
+                                    .rounding(10.0)
+                                    .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
+                                ui.horizontal(|ui| {
+                                    // horizontal because button text is left aligned in vertical layout
+                                    ui.add_enabled(false, button);
+                                });
+                            }
+
                             ui.label(card.color.to_string());
                         }
                         TrumpSuit::Color(card, color) => {
-                            let image = Image::new(card.image())
-                                .rounding(10.0)
-                                .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
-                                .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
-                            ui.add_sized(Vec2::new(120.0, 120.0 * 1.57), image);
+                            if let Some(path) = get_image_path(card) {
+                                let image = Image::new(path)
+                                    .rounding(10.0)
+                                    .max_size(Vec2::new(120.0, 120.0 * average_aspect_ratio)) // image aspect ratio is ~ 1:1.57
+                                    .fit_to_exact_size(Vec2::new(
+                                        120.0,
+                                        120.0 * average_aspect_ratio,
+                                    ));
+                                ui.add_sized(Vec2::new(120.0, 120.0 * average_aspect_ratio), image);
+                            } else {
+                                // button is always disabled
+                                let button = egui::Button::new(card.to_string())
+                                    .rounding(10.0)
+                                    .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
+                                ui.horizontal(|ui| {
+                                    // horizontal because button text is left aligned in vertical layout
+                                    ui.add_enabled(false, button);
+                                });
+                            }
 
                             let color = match (color, card.value) {
                                 (Some(color), CardValue::Wizard) => color.to_string(),
@@ -272,8 +313,15 @@ impl App {
                             ui.label(color);
                         }
                         TrumpSuit::None => {
-                            let label = egui::Label::new("No Trump Suit");
-                            ui.add_sized(Vec2::new(120.0, 120.0 * 1.57), label);
+                            // button is always disabled
+                            let button = egui::Button::new("No Trump Card")
+                                .rounding(10.0)
+                                .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
+                            ui.horizontal(|ui| {
+                                // horizontal because button text is left aligned in vertical layout
+                                ui.add_enabled(false, button);
+                            });
+                            ui.label("");
                         }
                     }
                 }
@@ -296,13 +344,25 @@ impl App {
                                 .unwrap();
 
                             ui.vertical(|ui| {
-                                let image = Image::new(card.image())
-                                    .rounding(10.0)
-                                    .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
-                                    .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
-                                ui.add_sized(Vec2::new(120.0, 120.0 * 1.57), image);
+                                if let Some(path) = get_image_path(card) {
+                                    let image = Image::new(path)
+                                        .rounding(10.0)
+                                        .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
+                                        .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
+                                    ui.add_sized(Vec2::new(120.0, 120.0 * 1.57), image);
 
-                                ui.label(&player.username);
+                                    ui.label(&player.username);
+                                } else {
+                                    // button is always disabled
+                                    let button = egui::Button::new(card.to_string())
+                                        .rounding(10.0)
+                                        .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
+                                    ui.horizontal(|ui| {
+                                        // horizontal because button text is left aligned in vertical layout
+                                        ui.add_enabled(false, button);
+                                    });
+                                    ui.label(&player.username);
+                                }
                             });
                         }
                     }
@@ -317,6 +377,18 @@ impl App {
 impl App {
     /// Render own cards
     pub fn render_hand(&mut self, ui: &mut Ui, _ctx: &Context, _frame: &mut Frame) {
+        let get_image_path = |card: &Card| {
+            if let Some(cache) = &self.image_cache {
+                cache.get_image_path(card)
+            } else {
+                None
+            }
+        };
+        let average_aspect_ratio = if let Some(cache) = &self.image_cache {
+            cache.average_aspect_ratio().unwrap_or(1.57)
+        } else {
+            1.57
+        };
         let widget_width = 120.0 + 15.0;
         let num_columns = (ui.available_width() / widget_width).floor() as usize;
 
@@ -396,13 +468,21 @@ impl App {
                             current_column += 1;
 
                             let resp = {
-                                let image = Image::new(card.image())
-                                    .rounding(10.0)
-                                    .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
-                                    .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
-                                let button = egui::ImageButton::new(image);
+                                if let Some(path) = get_image_path(card) {
+                                    let image = Image::new(path)
+                                        .rounding(10.0)
+                                        .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
+                                        .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
+                                    let button = egui::ImageButton::new(image);
 
-                                ui.add_enabled(check_enabled(card), button)
+                                    ui.add_enabled(check_enabled(card), button)
+                                } else {
+                                    // button is always disabled
+                                    let button = egui::Button::new(card.to_string())
+                                        .rounding(10.0)
+                                        .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
+                                    ui.add_enabled(check_enabled(card), button)
+                                }
                             };
 
                             if resp.clicked() {

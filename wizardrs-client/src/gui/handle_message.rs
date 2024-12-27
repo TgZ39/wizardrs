@@ -1,4 +1,5 @@
 use crate::gui::App;
+use crate::image_cache::ImageCache;
 use crate::{
     client::WizardClient,
     interaction::{GuiMessage, StateUpdate},
@@ -57,6 +58,15 @@ impl App {
                         let event = ClientEvent::Ready;
                         client.send_event(event);
                     }
+                }
+                GuiMessage::RequestImageCache { path } => {
+                    tokio::spawn(async move {
+                        let cache = ImageCache::new(&path);
+                        let update = StateUpdate::ImageCache(cache);
+                        state_tx
+                            .send(update)
+                            .expect("error sending ImageCache to GUI");
+                    });
                 }
             }
         });

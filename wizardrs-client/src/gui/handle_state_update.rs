@@ -17,6 +17,9 @@ impl App {
                 StateUpdate::GameState(game_state) => {
                     self.join_page.game_state = game_state;
                 }
+                StateUpdate::ImageCache(cache) => {
+                    self.image_cache = Some(cache);
+                }
             }
         }
     }

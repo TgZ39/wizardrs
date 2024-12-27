@@ -1,12 +1,13 @@
-use std::sync::mpsc;
-
+use crate::config::Config;
 use crate::gui::app_page::host_page::HostPage;
 use crate::gui::app_page::join_page::JoinPage;
 use crate::gui::app_page::settings_page::SettingsPage;
 use crate::gui::app_page::AppPage;
-use crate::interaction::StateUpdate;
+use crate::image_cache::ImageCache;
+use crate::interaction::{GuiMessage, StateUpdate};
 use eframe::Frame;
 use egui::Context;
+use std::sync::mpsc;
 use strum::IntoEnumIterator;
 
 pub(crate) mod app_page;
@@ -20,20 +21,34 @@ pub struct App {
     settings_page: SettingsPage,
     state_rx: mpsc::Receiver<StateUpdate>, // receive state updates from backend
     state_tx: mpsc::Sender<StateUpdate>,   // used to pass to tasks to send state updates to self
+    config: Config,
+    image_cache: Option<ImageCache>,
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         let (state_tx, state_rx) = mpsc::channel();
 
-        Self {
+        let app = Self {
             current_page: AppPage::Host,
             host_page: HostPage::new(),
             join_page: JoinPage::new(),
-            settings_page: SettingsPage {},
+            settings_page: SettingsPage::new(),
             state_rx,
             state_tx,
+            config,
+            image_cache: None,
+        };
+
+        // async load image cache
+        if let Some(path) = &app.config.card_deck {
+            let message = GuiMessage::RequestImageCache {
+                path: path.to_path_buf(),
+            };
+            app.handle_message(message);
         }
+
+        app
     }
 }
 
@@ -41,9 +56,11 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         self.update_state();
 
-        // Top Panel
+        let bg_frame = egui::containers::Frame::default()
+            .inner_margin(4.0)
+            .fill(ctx.style().visuals.extreme_bg_color);
         egui::TopBottomPanel::top("top_panel")
-            .frame(egui::Frame::none().inner_margin(4.0))
+            .frame(bg_frame)
             .show(ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     ui.visuals_mut().button_frame = false;
@@ -67,5 +84,9 @@ impl eframe::App for App {
         }
 
         ctx.request_repaint();
+    }
+
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.config.save().unwrap();
     }
 }

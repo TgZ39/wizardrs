@@ -1,27 +1,48 @@
 #![windows_subsystem = "windows"]
 
+use crate::config::Config;
 use crate::error::*;
 use crate::gui::App;
-use egui::{ViewportBuilder, Visuals};
+use directories::ProjectDirs;
+use egui::ViewportBuilder;
 use egui_extras::install_image_loaders;
 use std::sync::Arc;
-use tracing::{info, Level};
+use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 pub(crate) mod client;
+pub(crate) mod config;
 pub(crate) mod error;
 pub(crate) mod gui;
+pub(crate) mod image_cache;
 pub(crate) mod interaction;
 pub(crate) mod state;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // setup logger
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::TRACE)
+        .with_line_number(true)
         .compact()
         .finish();
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
+    // open config
+    let config = match ProjectDirs::from("de", "TgZ39", "Wizardrs") {
+        Some(proj_dirs) => {
+            let mut config_path = proj_dirs.config_dir().to_path_buf();
+            config_path.push("config.json");
+
+            Config::load(&config_path)?
+        }
+        None => {
+            error!("unable to find app dir");
+            return Ok(());
+        }
+    };
+
+    // GUI
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default(),
         ..Default::default()
@@ -55,15 +76,14 @@ async fn main() -> Result<()> {
                 .insert(0, "CaskaydiaCoveNerdFontMono-Regular".to_owned());
             cc.egui_ctx.set_fonts(fonts);
 
-            // set dark mode default
-            cc.egui_ctx
-                .style_mut(|style| style.visuals = Visuals::dark());
+            // set theme preference
+            cc.egui_ctx.set_theme(config.theme);
 
             // set zoom
             cc.egui_ctx.set_zoom_factor(1.2);
 
             install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(App::new()))
+            Ok(Box::new(App::new(config)))
         }),
     )?;
 

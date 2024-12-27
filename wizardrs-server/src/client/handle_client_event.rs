@@ -235,7 +235,7 @@ impl WizardClient {
                     }
                 };
 
-                let game_phase = self.server.game_phase.read().await.clone();
+                let game_phase = *self.server.game_phase.read().await;
                 match game_phase {
                     GamePhase::Lobby => {}
                     GamePhase::Bidding => {}

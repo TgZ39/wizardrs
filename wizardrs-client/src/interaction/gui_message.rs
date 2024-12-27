@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use wizardrs_core::card::Card;
 
 pub enum GuiMessage {
@@ -12,11 +13,8 @@ pub enum GuiMessage {
     PlayCard {
         card: Card,
     },
-    Ready, // ready button clicked
-           // MakeBid {
-           //     bid: u8
-           // },
-           // SetTrumpColor {
-           //     color: CardColor
-           // }
+    Ready,
+    RequestImageCache {
+        path: PathBuf,
+    },
 }
