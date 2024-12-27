@@ -4,7 +4,14 @@ use crate::{
     client::WizardClient,
     interaction::{GuiMessage, StateUpdate},
 };
-use std::sync::mpsc;
+use directories::ProjectDirs;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::sync::{mpsc, Arc};
+use tokio::sync::Semaphore;
+use wizardrs_core::card::value::CardValue;
+use wizardrs_core::card::Card;
 use wizardrs_core::client_event::ClientEvent;
 use wizardrs_server::server::WizardServer;
 
@@ -66,6 +73,88 @@ impl App {
                         state_tx
                             .send(update)
                             .expect("error sending ImageCache to GUI");
+                    });
+                }
+                GuiMessage::DownloadAndrianKennardDeck => {
+                    tokio::spawn(async move {
+                        let base_url = "https://raw.githubusercontent.com/TgZ39/wizardrs/refs/heads/master/adrian-kennard/".to_string();
+                        let deck_base_path =
+                            if let Some(proj_dirs) = ProjectDirs::from("de", "TgZ39", "Wizardrs") {
+                                let mut path = proj_dirs.data_dir().to_path_buf();
+                                path.push("decks");
+                                path.push("adrian-kennard");
+
+                                if !path.exists() {
+                                    fs::create_dir_all(&path).expect("error creating folders");
+                                }
+                                path
+                            } else {
+                                return;
+                            };
+
+                        // download images
+                        let semaphore = Arc::new(Semaphore::new(5));
+                        let mut handles = Vec::new();
+
+                        for card in Card::all() {
+                            let semaphore = semaphore.clone();
+
+                            let deck_base_path = deck_base_path.clone();
+                            let base_url = base_url.clone();
+
+                            let handle = tokio::spawn(async move {
+                                let permit =
+                                    semaphore.acquire().await.expect("error acquiring permit");
+
+                                let file_name = match card.value {
+                                    CardValue::Fool => format!(
+                                        "{}-fool.jpg",
+                                        card.color.to_string().to_ascii_lowercase()
+                                    ),
+                                    CardValue::Simple(value) => format!(
+                                        "{}-{value}.jpg",
+                                        card.color.to_string().to_ascii_lowercase()
+                                    ),
+                                    CardValue::Wizard => format!(
+                                        "{}-wizard.jpg",
+                                        card.color.to_string().to_ascii_lowercase()
+                                    ),
+                                };
+                                let full_url = format!("{base_url}{file_name}");
+
+                                // download file
+                                let client = reqwest::Client::builder().build().unwrap();
+                                let resp = client
+                                    .get(full_url)
+                                    .header("Host", "raw.githubusercontent.com")
+                                    .send()
+                                    .await
+                                    .unwrap()
+                                    .error_for_status()
+                                    .unwrap();
+                                let bytes =
+                                    resp.bytes().await.expect("error loading response body");
+
+                                let mut full_path = deck_base_path.to_path_buf();
+                                full_path.push(file_name);
+
+                                let mut file =
+                                    File::create(full_path).expect("error creating file");
+                                file.write_all(&bytes).expect("error saving file");
+
+                                drop(permit);
+                            });
+                            handles.push(handle);
+                        }
+
+                        // wait for all tasks to finish
+                        futures::future::join_all(handles).await;
+
+                        // inform GUI download is finished
+                        let update = StateUpdate::FinishedDownloadingAdrianKennard;
+                        state_tx
+                            .send(update)
+                            .expect("error sending StateUpdate to GUI");
                     });
                 }
             }

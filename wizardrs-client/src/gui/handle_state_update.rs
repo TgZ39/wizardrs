@@ -20,6 +20,10 @@ impl App {
                 StateUpdate::ImageCache(cache) => {
                     self.image_cache = Some(cache);
                 }
+                StateUpdate::FinishedDownloadingAdrianKennard => {
+                    self.settings_page.downloading_adrian_kennard = false;
+                    self.settings_page.update_card_decks();
+                }
             }
         }
     }

@@ -17,4 +17,5 @@ pub enum GuiMessage {
     RequestImageCache {
         path: PathBuf,
     },
+    DownloadAndrianKennardDeck,
 }

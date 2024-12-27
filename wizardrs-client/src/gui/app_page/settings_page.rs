@@ -8,17 +8,21 @@ use std::path::PathBuf;
 
 pub struct SettingsPage {
     deck_paths: Vec<PathBuf>,
+    pub downloading_adrian_kennard: bool,
 }
 
 impl SettingsPage {
     pub fn new() -> Self {
-        let mut page = Self { deck_paths: vec![] };
+        let mut page = Self {
+            deck_paths: vec![],
+            downloading_adrian_kennard: false,
+        };
         page.update_card_decks();
 
         page
     }
 
-    fn update_card_decks(&mut self) {
+    pub fn update_card_decks(&mut self) {
         if let Some(proj_dirs) = ProjectDirs::from("de", "TgZ39", "Wizardrs") {
             let mut deck_dir = proj_dirs.data_dir().to_path_buf();
             deck_dir.push("decks");
@@ -84,6 +88,7 @@ impl App {
                                 self.image_cache = None;
                             }
                         });
+                    // refresh button
                     if ui.button("Refresh").clicked() {
                         // update installed decks
                         self.settings_page.update_card_decks();
@@ -96,6 +101,16 @@ impl App {
                             self.handle_message(message);
                         }
                     }
+
+                    // download Adrian Kennard Deck
+                    ui.add_enabled_ui(!self.settings_page.downloading_adrian_kennard, |ui| {
+                        if ui.button("Download adrian-kennard deck").clicked() {
+                            self.settings_page.downloading_adrian_kennard = true;
+
+                            let message = GuiMessage::DownloadAndrianKennardDeck;
+                            self.handle_message(message);
+                        }
+                    });
                 });
             });
         });

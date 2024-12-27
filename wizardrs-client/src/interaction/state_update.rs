@@ -9,4 +9,5 @@ pub enum StateUpdate {
     WizardServer(Option<Arc<WizardServer>>),
     GameState(Option<GameState>),
     ImageCache(ImageCache),
+    FinishedDownloadingAdrianKennard,
 }
