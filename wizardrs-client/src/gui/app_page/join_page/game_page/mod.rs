@@ -1,7 +1,7 @@
 use crate::gui::App;
 use crate::interaction::GuiMessage;
 use eframe::Frame;
-use egui::{Context, Image, RichText, Ui, Vec2};
+use egui::{Context, Image, Margin, RichText, Ui, Vec2};
 use egui_extras::Column;
 use std::ops::Deref;
 use tracing::error;
@@ -44,6 +44,8 @@ impl App {
                 ui.separator();
 
                 if let Some(state) = &self.join_page.game_state {
+                    ui.add_space(3.0);
+
                     for player in &state.players {
                         let label = {
                             let mut out = String::new();
@@ -79,6 +81,8 @@ impl App {
                             ui.add(label);
                         }
                     }
+
+                    ui.add_space(5.0);
                 }
 
                 let sep = egui::Separator::default().grow(10.0).spacing(0.0);
@@ -86,13 +90,14 @@ impl App {
 
                 // event log
                 let mut resp = None;
-                let margin = egui::Margin {
+                let margin = Margin {
                     left: 2.0,
                     right: 2.0,
-                    ..Default::default()
+                    top: 10.0,
+                    bottom: 2.0,
                 };
                 egui::CentralPanel::default()
-                    .frame(egui::Frame::central_panel(ctx.style().deref()).inner_margin(margin))
+                    .frame(egui::Frame::default().inner_margin(margin))
                     .show_inside(ui, |ui| {
                         egui::ScrollArea::vertical()
                             .max_height(ui.available_height() - 30.0)

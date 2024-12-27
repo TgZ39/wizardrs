@@ -1,7 +1,7 @@
 use crate::client::WizardClient;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use tracing::warn;
+use tracing::debug;
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
 use wizardrs_core::client_event::ClientEvent;
@@ -25,7 +25,7 @@ impl WizardClient {
                 self.server.broadcast_event(event);
             }
             ClientEvent::StartGame => {
-                warn!("StartGame by {}", self.username);
+                debug!("StartGame by {}", self.username);
                 // only start game if it hasn't started yet and enough players are online
                 if matches!(*self.server.game_phase.read().await, GamePhase::Lobby)
                     && (3..=6).contains(&self.server.num_players().await)
@@ -34,7 +34,7 @@ impl WizardClient {
                 }
             }
             ClientEvent::MakeBid { bid } => {
-                warn!("MakeBid: {bid} by {}", self.username);
+                debug!("MakeBid: {bid} by {}", self.username);
 
                 let current_phase = self.server.game_phase.read().await.to_owned();
                 if current_phase == GamePhase::Bidding // check if it is bidding phase
@@ -42,11 +42,11 @@ impl WizardClient {
                 && self.server.scoreboard.read().await.get_entry(self.uuid).is_some_and(|(_, bid, _)| bid.is_none())
                 // check if self has already bid
                 {
-                    warn!("MakeBid: {bid} passed check by {}", self.username);
+                    debug!("MakeBid: {bid} passed check by {}", self.username);
 
                     // check if self is last player to bid
                     if self.is_last_player_to_bid().await {
-                        warn!("MakeBid: {bid} is last bid by {}", self.username);
+                        debug!("MakeBid: {bid} is last bid by {}", self.username);
 
                         // check if bid is allowed
                         let sum = self.server.sum_bids().await;
@@ -61,7 +61,7 @@ impl WizardClient {
                     // check if bid has valid range
                     let current_round = self.server.current_round.load(Ordering::SeqCst);
                     if !(0..=current_round).contains(&bid) {
-                        warn!("MakeBid: {bid} has invalid range by {}", self.username);
+                        debug!("MakeBid: {bid} has invalid range by {}", self.username);
                         return;
                     }
 
@@ -72,7 +72,7 @@ impl WizardClient {
                     self.server.update_scoreboard().await;
 
                     if self.is_last_player_to_bid().await {
-                        warn!(
+                        debug!(
                             "MakeBid: {bid} is last bid (start round) by {}",
                             self.username
                         );
@@ -92,7 +92,7 @@ impl WizardClient {
                         let index = first_bidder.index().await;
                         self.server.set_player_on_turn(index as u8).await;
                     } else {
-                        warn!("MakeBid: {bid} is not last id by {}", self.username);
+                        debug!("MakeBid: {bid} is not last id by {}", self.username);
                         // there are other players who need to make a bid so increment the player on turn by 1
                         self.server
                             .set_player_on_turn(
@@ -103,7 +103,7 @@ impl WizardClient {
                 }
             }
             ClientEvent::SetTrumpColor { color } => {
-                warn!("SetTrumpColor: {color} received by {}", self.username);
+                debug!("SetTrumpColor: {color} received by {}", self.username);
 
                 let current_phase = self.server.game_phase.read().await.to_owned();
                 let trump_suit = self.server.trump_suit.read().await.to_owned();
@@ -114,7 +114,7 @@ impl WizardClient {
                     && self.uuid == self.server.get_player_on_turn().await.uuid
                 // check if self is player on turn
                 {
-                    warn!("SetTrumpColor: {color} passed check by {}", self.username);
+                    debug!("SetTrumpColor: {color} passed check by {}", self.username);
                     // set trump suit color
                     self.server.trump_suit.write().await.set_color(color);
 
@@ -134,7 +134,7 @@ impl WizardClient {
                 }
             }
             ClientEvent::PlayCard { card } => {
-                warn!("PlayCard: {card} received by {}", self.username);
+                debug!("PlayCard: {card} received by {}", self.username);
 
                 // check if we are in waiting for everyone ready
                 if self.server.played_cards.read().await.len() >= self.server.num_players().await {
@@ -149,7 +149,7 @@ impl WizardClient {
                 && self.uuid == self.server.get_player_on_turn().await.uuid
                 // check if self is player on turn
                 {
-                    warn!("PlayCard: {card} passed check by {}", self.username);
+                    debug!("PlayCard: {card} passed check by {}", self.username);
 
                     // TODO check if the played card is valid
 
@@ -161,7 +161,7 @@ impl WizardClient {
                     if is_last_player_on_turn {
                         // finish the trick and wait for everyone ready before starting the next round
 
-                        warn!(
+                        debug!(
                             "PlayCard: {card} is last player on turn by {}",
                             self.username
                         );
@@ -191,7 +191,7 @@ impl WizardClient {
                         let event = ServerEvent::WaitingForReady { waiting: true };
                         self.server.broadcast_event(event);
                     } else {
-                        warn!(
+                        debug!(
                             "PlayCard: {card} is not last player on turn by {}",
                             self.username
                         );
@@ -201,7 +201,7 @@ impl WizardClient {
                 }
             }
             ClientEvent::Ready => {
-                warn!("Ready received by {}", self.username);
+                debug!("Ready received by {}", self.username);
 
                 self.ready.store(true, Ordering::SeqCst);
                 // broadcast ready event
@@ -214,7 +214,7 @@ impl WizardClient {
                 // check if everyone is ready before proceeding
                 if !self.server.everyone_ready().await {
                     // not everyone is ready
-                    warn!("Ready: not everyone ready by {}", self.username);
+                    debug!("Ready: not everyone ready by {}", self.username);
                     return;
                 }
 
@@ -235,12 +235,12 @@ impl WizardClient {
                     }
                 };
 
-                let game_phase = *self.server.game_phase.read().await;
+                let game_phase = self.server.game_phase.read().await.clone();
                 match game_phase {
                     GamePhase::Lobby => {}
                     GamePhase::Bidding => {}
                     GamePhase::Playing => {
-                        warn!("Ready: playing phase ready by {}", self.username);
+                        debug!("Ready: playing phase ready by {}", self.username);
                         // the trick has already been evaluated
                         // now we just start the next trick or finish the game
 
@@ -258,7 +258,7 @@ impl WizardClient {
                         let (winner_uuid, _) = evaluate_trick_winner(&cards[..], trump_color);
 
                         if self.server.is_last_trick().await {
-                            warn!("Ready: is last trick {}", self.username);
+                            debug!("Ready: is last trick {}", self.username);
                             // it was the last trick
                             // finish round
 
@@ -270,6 +270,7 @@ impl WizardClient {
 
                             // check if it was the last round
                             if current_round == self.server.max_rounds().await.unwrap() {
+                                debug!("Ready: finish round by {}", self.username);
                                 // TODO finish game
 
                                 // set game phase
@@ -279,7 +280,12 @@ impl WizardClient {
                                     phase: GamePhase::Finished,
                                 };
                                 self.server.broadcast_event(event);
+
+                                // reset ready
+                                set_waiting_ready(true);
+                                reset_ready.await;
                             } else {
+                                debug!("Ready: starting next round by {}", self.username);
                                 // more rounds need to be played
                                 self.server.start_round(current_round + 1).await;
 
@@ -288,7 +294,7 @@ impl WizardClient {
                                 reset_ready.await;
                             }
                         } else {
-                            warn!("Ready: is not last trick by {}", self.username);
+                            debug!("Ready: is not last trick by {}", self.username);
                             // start next trick
                             self.server.current_trick.fetch_add(1, Ordering::SeqCst);
 
