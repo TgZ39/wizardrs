@@ -67,7 +67,7 @@ impl App {
                     }
                 }
                 Message::RequestImageCache { path } => {
-                    let cache = ImageCache::new(&path);
+                    let cache = ImageCache::new(&path).ok();
                     let update = StateUpdate::ImageCache(cache);
                     state_tx
                         .send(update)

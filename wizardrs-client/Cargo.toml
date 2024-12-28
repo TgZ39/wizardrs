@@ -20,7 +20,7 @@ eframe = "0.30"
 strum = { version = "0.26", features = ["derive"] }
 arboard = "3.4"
 egui_extras = { version = "0.30", features = ["all_loaders"] }
-image = { version = "0.25", features = ["jpeg", "png", "webp"] }
 serde = { version = "1.0", features = ["derive"] }
 directories = "5.0"
 reqwest = "0.12"
+image = { version = "0.25.5", features = ["webp", "png", "jpeg", "gif"] }

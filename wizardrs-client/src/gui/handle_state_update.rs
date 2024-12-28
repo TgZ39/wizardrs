@@ -18,7 +18,7 @@ impl App {
                     self.join_page.game_state = game_state;
                 }
                 StateUpdate::ImageCache(cache) => {
-                    self.image_cache = Some(cache);
+                    self.image_cache = cache;
                 }
                 StateUpdate::FinishedDownloadingAdrianKennard => {
                     self.settings_page.downloading_adrian_kennard = false;

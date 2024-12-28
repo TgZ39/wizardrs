@@ -8,6 +8,6 @@ pub enum StateUpdate {
     WizardClient(Option<Arc<WizardClient>>),
     WizardServer(Option<Arc<WizardServer>>),
     GameState(Option<GameState>),
-    ImageCache(ImageCache),
+    ImageCache(Option<ImageCache>),
     FinishedDownloadingAdrianKennard,
 }
