@@ -1,10 +1,11 @@
 use std::ops::Deref;
 
 use crate::gui::App;
+use crate::interaction::Message;
 use eframe::Frame;
 use egui::{Color32, Context, Ui, Vec2};
 use wizardrs_core::card::color::CardColor;
-use wizardrs_core::{client_event::ClientEvent, game_phase::GamePhase};
+use wizardrs_core::game_phase::GamePhase;
 
 impl App {
     pub fn render_bidding_page(&mut self, ctx: &Context, frame: &mut Frame) {
@@ -95,9 +96,9 @@ impl App {
                             // checks whether a bid can be chosen
                             let check_enabled = |bid: i32| -> bool {
                                 state.game_phase == GamePhase::Bidding // check if it is bidding phase
-                                        && state.get_player_on_turn().uuid == client.uuid // check if self is player on turn
-                                        && possible_bids.contains(&bid) // check if bid has valid range
-                                        && bid != disallowed_bid // check if bid is not disallowed bid
+                                    && state.get_player_on_turn().uuid == client.uuid // check if self is player on turn
+                                    && possible_bids.contains(&bid) // check if bid has valid range
+                                    && bid != disallowed_bid // check if bid is not disallowed bid
                             };
 
                             let mut current_column = 0;
@@ -111,10 +112,9 @@ impl App {
                                 let resp = ui.add_enabled(check_enabled(*bid), button);
 
                                 if resp.clicked() {
-                                    // TODO transfer to GuiMessage
                                     // bid clicked
-                                    let event = ClientEvent::MakeBid { bid: *bid as u8 };
-                                    client.send_event(event);
+                                    let message = Message::MakeBid { bid: *bid as u8 };
+                                    self.handle_message(message);
                                 }
 
                                 if current_column >= num_columns {
@@ -139,55 +139,43 @@ impl App {
                 .min_size(egui::Vec2::new(50.0, 50.0))
                 .fill(Color32::BLUE);
             if ui.add(button).clicked() {
-                // TODO transfer to GuiMessage
-                let event = ClientEvent::SetTrumpColor {
+                let message = Message::SetTrumpColor {
                     color: CardColor::Blue,
                 };
-                if let Some(client) = &self.join_page.client {
-                    client.send_event(event);
-                }
+                self.handle_message(message);
             }
 
             // green
             let button = egui::Button::new("Green")
-                .min_size(egui::Vec2::new(50.0, 50.0))
+                .min_size(Vec2::new(50.0, 50.0))
                 .fill(Color32::GREEN);
             if ui.add(button).clicked() {
-                // TODO transfer to GuiMessage
-                let event = ClientEvent::SetTrumpColor {
+                let message = Message::SetTrumpColor {
                     color: CardColor::Green,
                 };
-                if let Some(client) = &self.join_page.client {
-                    client.send_event(event);
-                }
+                self.handle_message(message);
             }
 
             // red
             let button = egui::Button::new("Red")
-                .min_size(egui::Vec2::new(50.0, 50.0))
+                .min_size(Vec2::new(50.0, 50.0))
                 .fill(Color32::RED);
             if ui.add(button).clicked() {
-                // TODO transfer to GuiMessage
-                let event = ClientEvent::SetTrumpColor {
+                let message = Message::SetTrumpColor {
                     color: CardColor::Red,
                 };
-                if let Some(client) = &self.join_page.client {
-                    client.send_event(event);
-                }
+                self.handle_message(message);
             }
 
             // yellow
             let button = egui::Button::new("Yellow")
-                .min_size(egui::Vec2::new(50.0, 50.0))
+                .min_size(Vec2::new(50.0, 50.0))
                 .fill(Color32::YELLOW);
             if ui.add(button).clicked() {
-                // TODO transfer to GuiMessage
-                let event = ClientEvent::SetTrumpColor {
+                let message = Message::SetTrumpColor {
                     color: CardColor::Yellow,
                 };
-                if let Some(client) = &self.join_page.client {
-                    client.send_event(event);
-                }
+                self.handle_message(message);
             }
         });
 

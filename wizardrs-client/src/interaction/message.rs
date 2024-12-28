@@ -1,7 +1,8 @@
 use std::path::PathBuf;
+use wizardrs_core::card::color::CardColor;
 use wizardrs_core::card::Card;
 
-pub enum GuiMessage {
+pub enum Message {
     CreateServer {
         port: u16,
         authtoken: Option<String>,
@@ -19,4 +20,14 @@ pub enum GuiMessage {
     },
     DownloadAndrianKennardDeck,
     LeaveLobby,
+    MakeBid {
+        bid: u8,
+    },
+    StartGame,
+    SetTrumpColor {
+        color: CardColor,
+    },
+    SendChatMessage {
+        msg: String,
+    },
 }

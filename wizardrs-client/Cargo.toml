@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wizardrs-core = { path = "../wizardrs-core"}
-wizardrs-server = { path = "../wizardrs-server"}
+wizardrs-core = { path = "../wizardrs-core" }
+wizardrs-server = { path = "../wizardrs-server" }
 tokio = { version = "1.42", features = ["rt", "rt-multi-thread", "macros"] }
 tokio-tungstenite = "0.26"
 tracing = "0.1"

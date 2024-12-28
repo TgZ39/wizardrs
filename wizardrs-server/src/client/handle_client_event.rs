@@ -38,8 +38,8 @@ impl WizardClient {
 
                 let current_phase = self.server.game_phase.read().await.to_owned();
                 if current_phase == GamePhase::Bidding // check if it is bidding phase
-                && self.uuid == self.server.get_player_on_turn().await.uuid // check if self is player on turn
-                && self.server.scoreboard.read().await.get_entry(self.uuid).is_some_and(|(_, bid, _)| bid.is_none())
+                    && self.uuid == self.server.get_player_on_turn().await.uuid // check if self is player on turn
+                    && self.server.scoreboard.read().await.get_entry(self.uuid).is_some_and(|(_, bid, _)| bid.is_none())
                 // check if self has already bid
                 {
                     debug!("MakeBid: {bid} passed check by {}", self.username);
@@ -146,7 +146,7 @@ impl WizardClient {
                 let current_phase = self.server.game_phase.read().await.to_owned();
 
                 if current_phase == GamePhase::Playing // check if it is playing phase
-                && self.uuid == self.server.get_player_on_turn().await.uuid
+                    && self.uuid == self.server.get_player_on_turn().await.uuid
                 // check if self is player on turn
                 {
                     debug!("PlayCard: {card} passed check by {}", self.username);

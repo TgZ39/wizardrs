@@ -1,5 +1,5 @@
 use crate::gui::App;
-use crate::interaction::GuiMessage;
+use crate::interaction::Message;
 use eframe::Frame;
 use egui::{Context, Image, Margin, RichText, Ui, Vec2};
 use egui_extras::Column;
@@ -7,7 +7,6 @@ use std::ops::Deref;
 use tracing::error;
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
-use wizardrs_core::client_event::ClientEvent;
 use wizardrs_core::game_phase::GamePhase;
 use wizardrs_core::server_event::ServerEvent;
 use wizardrs_core::trump_suit::TrumpSuit;
@@ -151,10 +150,8 @@ impl App {
             return;
         }
 
-        if let Some(client) = &self.join_page.client {
-            let event = ClientEvent::SendChatMessage { content: msg };
-            client.send_event(event);
-        }
+        let message = Message::SendChatMessage { msg };
+        self.handle_message(message);
 
         self.join_page.chat_input.clear();
     }
@@ -239,7 +236,7 @@ impl App {
                     let resp = ui.add(button);
                     if resp.clicked() {
                         // ready button clicked
-                        let message = GuiMessage::Ready;
+                        let message = Message::Ready;
                         self.handle_message(message);
                     }
                 });
@@ -502,7 +499,7 @@ impl App {
 
                             if resp.clicked() {
                                 // card clicked
-                                let message = GuiMessage::PlayCard { card: *card };
+                                let message = Message::PlayCard { card: *card };
                                 self.handle_message(message);
                             }
 

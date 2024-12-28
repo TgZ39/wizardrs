@@ -4,7 +4,7 @@ use crate::gui::app_page::join_page::JoinPage;
 use crate::gui::app_page::settings_page::SettingsPage;
 use crate::gui::app_page::AppPage;
 use crate::image_cache::ImageCache;
-use crate::interaction::{GuiMessage, StateUpdate};
+use crate::interaction::{Message, StateUpdate};
 use eframe::emath::Align;
 use eframe::Frame;
 use egui::Context;
@@ -44,7 +44,7 @@ impl App {
 
         // async load image cache
         if let Some(path) = &app.config.card_deck {
-            let message = GuiMessage::RequestImageCache {
+            let message = Message::RequestImageCache {
                 path: path.to_path_buf(),
             };
             app.handle_message(message);
@@ -81,7 +81,7 @@ impl eframe::App for App {
                             ui.visuals_mut().button_frame = true;
 
                             if ui.button("Leave Lobby").clicked() {
-                                let message = GuiMessage::LeaveLobby;
+                                let message = Message::LeaveLobby;
                                 self.handle_message(message);
                             }
                         });

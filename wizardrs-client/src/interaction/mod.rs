@@ -1,5 +1,5 @@
-mod gui_message;
+mod message;
 mod state_update;
 
-pub use gui_message::GuiMessage;
+pub use message::Message;
 pub use state_update::StateUpdate;

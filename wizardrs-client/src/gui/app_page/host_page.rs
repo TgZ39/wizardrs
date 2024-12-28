@@ -1,4 +1,4 @@
-use crate::{gui::App, interaction::GuiMessage};
+use crate::{gui::App, interaction::Message};
 use arboard::Clipboard;
 use eframe::Frame;
 use egui::{Color32, Context};
@@ -166,7 +166,7 @@ impl App {
 
         self.host_page.is_loading = true;
 
-        let message = GuiMessage::CreateServer { port, authtoken };
+        let message = Message::CreateServer { port, authtoken };
         self.handle_message(message);
     }
 

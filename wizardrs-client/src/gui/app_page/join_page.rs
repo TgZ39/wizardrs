@@ -1,6 +1,6 @@
 use crate::gui::App;
 use crate::state::GameState;
-use crate::{client::WizardClient, interaction::GuiMessage};
+use crate::{client::WizardClient, interaction::Message};
 use eframe::Frame;
 use egui::Context;
 use std::sync::Arc;
@@ -110,7 +110,7 @@ impl App {
 
         self.join_page.is_loading = true;
 
-        let message = GuiMessage::JoinGame { url, username };
+        let message = Message::JoinGame { url, username };
         self.handle_message(message);
     }
 }

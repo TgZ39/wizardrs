@@ -1,7 +1,6 @@
 use crate::card::color::CardColor;
 use crate::card::color::CardColor::*;
 use crate::card::Card;
-use crate::trump_suit::TrumpSuit;
 use crate::utils::evaluate_trick_winner;
 use uuid::Uuid;
 

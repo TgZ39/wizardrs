@@ -1,7 +1,7 @@
 use crate::gui::App;
+use crate::interaction::Message;
 use eframe::Frame;
 use egui::Context;
-use wizardrs_core::client_event::ClientEvent;
 
 impl App {
     pub fn render_lobby_page(&mut self, ctx: &Context, _frame: &mut Frame) {
@@ -25,10 +25,6 @@ impl App {
 
     /// Send StartGame event to the server
     fn start_game(&self) {
-        // TODO migrate to GuiMessage
-
-        if let Some(client) = &self.join_page.client {
-            client.send_event(ClientEvent::StartGame);
-        }
+        self.handle_message(Message::StartGame);
     }
 }

@@ -1,5 +1,5 @@
 use crate::gui::App;
-use crate::interaction::GuiMessage;
+use crate::interaction::Message;
 use directories::ProjectDirs;
 use eframe::Frame;
 use egui::Context;
@@ -73,7 +73,7 @@ impl App {
                                     )
                                     .clicked()
                                 {
-                                    let message = GuiMessage::RequestImageCache {
+                                    let message = Message::RequestImageCache {
                                         path: path.to_path_buf(),
                                     };
                                     self.handle_message(message);
@@ -95,7 +95,7 @@ impl App {
 
                         // refresh active deck
                         if let Some(path) = &self.config.card_deck {
-                            let message = GuiMessage::RequestImageCache {
+                            let message = Message::RequestImageCache {
                                 path: path.to_path_buf(),
                             };
                             self.handle_message(message);
@@ -107,7 +107,7 @@ impl App {
                         if ui.button("Download adrian-kennard deck").clicked() {
                             self.settings_page.downloading_adrian_kennard = true;
 
-                            let message = GuiMessage::DownloadAndrianKennardDeck;
+                            let message = Message::DownloadAndrianKennardDeck;
                             self.handle_message(message);
                         }
                     });

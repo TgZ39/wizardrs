@@ -2,7 +2,7 @@ use crate::gui::App;
 use crate::image_cache::ImageCache;
 use crate::{
     client::WizardClient,
-    interaction::{GuiMessage, StateUpdate},
+    interaction::{Message, StateUpdate},
 };
 use directories::ProjectDirs;
 use std::fs;
@@ -16,13 +16,13 @@ use wizardrs_core::client_event::ClientEvent;
 use wizardrs_server::server::WizardServer;
 
 impl App {
-    pub fn handle_message(&self, message: GuiMessage) {
+    pub fn handle_message(&self, message: Message) {
         let state_tx = self.state_tx.clone();
         let client = self.join_page.client.clone();
 
         tokio::spawn(async move {
             match message {
-                GuiMessage::CreateServer { port, authtoken } => {
+                Message::CreateServer { port, authtoken } => {
                     let server = WizardServer::new(port, authtoken).await.ok();
                     let update = StateUpdate::WizardServer(server);
 
@@ -30,7 +30,7 @@ impl App {
                         .send(update)
                         .expect("error sending WizardServer to GUI");
                 }
-                GuiMessage::JoinGame { url, username } => {
+                Message::JoinGame { url, username } => {
                     let (local_state_tx, local_state_rx) = mpsc::channel();
 
                     // forward state updates from WizardClient to GUI
@@ -54,26 +54,26 @@ impl App {
                         .send(update)
                         .expect("error sending WizardClient to GUI");
                 }
-                GuiMessage::PlayCard { card } => {
+                Message::PlayCard { card } => {
                     if let Some(client) = client {
                         let event = ClientEvent::PlayCard { card };
                         client.send_event(event);
                     }
                 }
-                GuiMessage::Ready => {
+                Message::Ready => {
                     if let Some(client) = client {
                         let event = ClientEvent::Ready;
                         client.send_event(event);
                     }
                 }
-                GuiMessage::RequestImageCache { path } => {
+                Message::RequestImageCache { path } => {
                     let cache = ImageCache::new(&path);
                     let update = StateUpdate::ImageCache(cache);
                     state_tx
                         .send(update)
                         .expect("error sending ImageCache to GUI");
                 }
-                GuiMessage::DownloadAndrianKennardDeck => {
+                Message::DownloadAndrianKennardDeck => {
                     let base_url = "https://raw.githubusercontent.com/TgZ39/wizardrs/refs/heads/master/adrian-kennard/".to_string();
                     let deck_base_path =
                         if let Some(proj_dirs) = ProjectDirs::from("de", "TgZ39", "Wizardrs") {
@@ -150,7 +150,7 @@ impl App {
                         .send(update)
                         .expect("error sending StateUpdate to GUI");
                 }
-                GuiMessage::LeaveLobby => {
+                Message::LeaveLobby => {
                     if let Some(client) = client {
                         client.disconnect();
                     }
@@ -164,6 +164,30 @@ impl App {
                     state_tx
                         .send(update)
                         .expect("error sending StateUpdate to GUI");
+                }
+                Message::MakeBid { bid } => {
+                    if let Some(client) = client {
+                        let event = ClientEvent::MakeBid { bid };
+                        client.send_event(event);
+                    }
+                }
+                Message::StartGame => {
+                    if let Some(client) = client {
+                        let event = ClientEvent::StartGame;
+                        client.send_event(event);
+                    }
+                }
+                Message::SetTrumpColor { color } => {
+                    if let Some(client) = client {
+                        let event = ClientEvent::SetTrumpColor { color };
+                        client.send_event(event);
+                    }
+                }
+                Message::SendChatMessage { msg } => {
+                    if let Some(client) = client {
+                        let event = ClientEvent::SendChatMessage { content: msg };
+                        client.send_event(event);
+                    }
                 }
             }
         });
