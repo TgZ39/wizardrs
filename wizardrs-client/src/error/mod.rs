@@ -12,4 +12,5 @@ pub enum Error {
     Io(#[from] io::Error),
     Serde(#[from] serde_json::error::Error),
     ConnectionClosed,
+    Other(String),
 }

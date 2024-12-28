@@ -30,21 +30,24 @@ impl Config {
                     theme: egui::ThemePreference::System,
                     card_deck: None,
                 };
-                // save config for the first time
+                // try saving config
                 config.save()?;
+
                 Ok(config)
             }
         }
     }
 
     pub fn save(&self) -> Result<()> {
+        let parent = if let Some(parent) = self.path.parent() {
+            parent
+        } else {
+            return Err(Error::Other("can't find parent path".to_string()));
+        };
+
         // check if the path exists
-        if !self.path.exists() {
-            if self.path.is_file() {
-                fs::create_dir_all(self.path.parent().unwrap())?;
-            } else {
-                fs::create_dir_all(&self.path)?;
-            }
+        if !parent.exists() {
+            fs::create_dir_all(parent)?;
         }
         let mut file = File::create(&self.path)?;
         let json = serde_json::to_string_pretty(self)?;
