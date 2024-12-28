@@ -1,5 +1,5 @@
 use super::App;
-use crate::interaction::StateUpdate;
+use crate::interaction::{Message, StateUpdate};
 
 impl App {
     pub fn update_state(&mut self) {
@@ -22,7 +22,12 @@ impl App {
                 }
                 StateUpdate::FinishedDownloadingAdrianKennard => {
                     self.settings_page.downloading_adrian_kennard = false;
-                    self.settings_page.update_card_decks();
+
+                    let message = Message::RequestUpdateDeckList;
+                    self.handle_message(message);
+                }
+                StateUpdate::UpdateDeckList(deck) => {
+                    self.settings_page.deck_paths = deck;
                 }
             }
         }

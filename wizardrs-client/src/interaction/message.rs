@@ -30,4 +30,6 @@ pub enum Message {
     SendChatMessage {
         msg: String,
     },
+    ImportDeck,
+    RequestUpdateDeckList,
 }

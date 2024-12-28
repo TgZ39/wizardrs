@@ -12,6 +12,10 @@ use std::ops::Deref;
 use std::sync::mpsc;
 use strum::IntoEnumIterator;
 
+pub(crate) const QUALIFIER: &str = "de";
+pub(crate) const ORGANIZATION: &str = "TgZ39";
+pub(crate) const APPLICATION: &str = "wizardrs";
+
 pub(crate) mod app_page;
 pub(crate) mod handle_message;
 pub(crate) mod handle_state_update;
@@ -49,6 +53,10 @@ impl App {
             };
             app.handle_message(message);
         }
+
+        // request deck list update
+        let message = Message::RequestUpdateDeckList;
+        app.handle_message(message);
 
         app
     }

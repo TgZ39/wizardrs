@@ -1,40 +1,19 @@
 use crate::gui::App;
 use crate::interaction::Message;
-use directories::ProjectDirs;
 use eframe::Frame;
 use egui::Context;
-use std::fs;
 use std::path::PathBuf;
 
 pub struct SettingsPage {
-    deck_paths: Vec<PathBuf>,
+    pub deck_paths: Vec<PathBuf>,
     pub downloading_adrian_kennard: bool,
 }
 
 impl SettingsPage {
     pub fn new() -> Self {
-        let mut page = Self {
+        Self {
             deck_paths: vec![],
             downloading_adrian_kennard: false,
-        };
-        page.update_card_decks();
-
-        page
-    }
-
-    pub fn update_card_decks(&mut self) {
-        if let Some(proj_dirs) = ProjectDirs::from("de", "TgZ39", "Wizardrs") {
-            let mut deck_dir = proj_dirs.data_dir().to_path_buf();
-            deck_dir.push("decks");
-
-            let mut out = Vec::new();
-            for entry in fs::read_dir(deck_dir).unwrap().flatten() {
-                if entry.path().is_dir() {
-                    out.push(entry.path().to_path_buf());
-                }
-            }
-
-            self.deck_paths = out;
         }
     }
 }
@@ -90,9 +69,6 @@ impl App {
                         });
                     // refresh button
                     if ui.button("Refresh").clicked() {
-                        // update installed decks
-                        self.settings_page.update_card_decks();
-
                         // refresh active deck
                         if let Some(path) = &self.config.card_deck {
                             let message = Message::RequestImageCache {
@@ -100,9 +76,13 @@ impl App {
                             };
                             self.handle_message(message);
                         }
+
+                        // update deck list
+                        let message = Message::RequestUpdateDeckList;
+                        self.handle_message(message);
                     }
 
-                    // download Adrian Kennard Deck
+                    // download Adrian Kennard deck button
                     ui.add_enabled_ui(!self.settings_page.downloading_adrian_kennard, |ui| {
                         if ui.button("Download adrian-kennard deck").clicked() {
                             self.settings_page.downloading_adrian_kennard = true;
@@ -111,6 +91,12 @@ impl App {
                             self.handle_message(message);
                         }
                     });
+
+                    // import zip button
+                    if ui.button("Import").clicked() {
+                        let message = Message::ImportDeck;
+                        self.handle_message(message);
+                    }
                 });
             });
         });

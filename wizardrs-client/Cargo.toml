@@ -24,3 +24,4 @@ serde = { version = "1.0", features = ["derive"] }
 directories = "5.0"
 reqwest = "0.12"
 image = { version = "0.25.5", features = ["webp", "png", "jpeg", "gif"] }
+rfd = "0.15.1"

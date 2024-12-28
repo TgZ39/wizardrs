@@ -1,10 +1,11 @@
-use crate::gui::App;
+use crate::gui::{App, APPLICATION, ORGANIZATION, QUALIFIER};
 use crate::image_cache::ImageCache;
 use crate::{
     client::WizardClient,
     interaction::{Message, StateUpdate},
 };
 use directories::ProjectDirs;
+use rfd::FileDialog;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -187,6 +188,82 @@ impl App {
                     if let Some(client) = client {
                         let event = ClientEvent::SendChatMessage { content: msg };
                         client.send_event(event);
+                    }
+                }
+                Message::ImportDeck => {
+                    // open file dialog
+                    if let (Some(proj_dirs), Some(folder)) = (
+                        ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION),
+                        FileDialog::new().pick_folder(),
+                    ) {
+                        // get folder name
+                        let deck_name = match folder.file_name() {
+                            Some(str) => str.to_os_string().to_string_lossy().to_string(),
+                            None => return,
+                        };
+
+                        let mut deck_dir = proj_dirs.data_dir().to_path_buf();
+                        deck_dir.push("decks");
+                        deck_dir.push(&deck_name);
+
+                        // check if dir already exists
+                        let mut counter = 0;
+                        while deck_dir.exists() {
+                            counter += 1;
+                            deck_dir.pop();
+                            deck_dir.push(format!("{deck_name}{counter}"));
+                        }
+
+                        // create dir
+                        fs::create_dir_all(&deck_dir).unwrap();
+
+                        // copy files
+                        for entry in fs::read_dir(folder).unwrap().flatten() {
+                            if !entry.path().is_file() {
+                                continue;
+                            }
+
+                            let file_name = entry.path().file_name().unwrap().to_os_string();
+                            let mut new_path = deck_dir.clone();
+                            new_path.push(file_name);
+
+                            fs::copy(entry.path(), new_path).unwrap();
+                        }
+
+                        // update deck list
+                        let mut deck_dir = proj_dirs.data_dir().to_path_buf();
+                        deck_dir.push("decks");
+
+                        let mut out = Vec::new();
+                        for entry in fs::read_dir(deck_dir).unwrap().flatten() {
+                            if entry.path().is_dir() {
+                                out.push(entry.path().to_path_buf());
+                            }
+                        }
+
+                        let update = StateUpdate::UpdateDeckList(out);
+                        state_tx
+                            .send(update)
+                            .expect("error sending StateUpdate to GUI");
+                    }
+                }
+                Message::RequestUpdateDeckList => {
+                    if let Some(proj_dirs) = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)
+                    {
+                        let mut deck_dir = proj_dirs.data_dir().to_path_buf();
+                        deck_dir.push("decks");
+
+                        let mut out = Vec::new();
+                        for entry in fs::read_dir(deck_dir).unwrap().flatten() {
+                            if entry.path().is_dir() {
+                                out.push(entry.path().to_path_buf());
+                            }
+                        }
+
+                        let update = StateUpdate::UpdateDeckList(out);
+                        state_tx
+                            .send(update)
+                            .expect("error sending StateUpdate to GUI");
                     }
                 }
             }
