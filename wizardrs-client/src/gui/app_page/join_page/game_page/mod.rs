@@ -1,8 +1,10 @@
 use crate::gui::App;
 use crate::interaction::GuiMessage;
+use eframe::emath::Align;
 use eframe::Frame;
 use egui::{Context, Image, Margin, RichText, Ui, Vec2};
 use egui_extras::Column;
+use std::ops::Deref;
 use tracing::error;
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
@@ -89,14 +91,15 @@ impl App {
 
                 // event log
                 let mut resp = None;
-                let margin = Margin {
-                    left: 2.0,
-                    right: 2.0,
-                    top: 10.0,
-                    bottom: 2.0,
-                };
                 egui::CentralPanel::default()
-                    .frame(egui::Frame::default().inner_margin(margin))
+                    .frame(
+                        egui::Frame::central_panel(ctx.style().deref()).inner_margin(Margin {
+                            left: 0.0,
+                            right: 0.0,
+                            top: 5.0,
+                            bottom: 0.0,
+                        }),
+                    )
                     .show_inside(ui, |ui| {
                         egui::ScrollArea::vertical()
                             .max_height(ui.available_height() - 30.0)
@@ -119,16 +122,25 @@ impl App {
                                 }
                             });
 
-                        ui.add_space(ui.available_height() - 25.0);
-
                         // chat message input
-                        resp = Some(ui.text_edit_singleline(&mut self.join_page.chat_input));
+                        ui.with_layout(egui::Layout::bottom_up(Align::Center), |ui| {
+                            egui::containers::Frame::none()
+                                .outer_margin(Margin::symmetric(2.0, 10.0))
+                                .show(ui, |ui| {
+                                    resp = Some(
+                                        ui.text_edit_singleline(&mut self.join_page.chat_input),
+                                    );
+                                });
+                        });
                     });
 
                 // send chat message
                 if let Some(resp) = resp {
                     if resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         self.send_chat_message();
+
+                        // refocus on TextEdit
+                        ui.memory_mut(|mem| mem.request_focus(resp.id));
                     }
                 }
             });
