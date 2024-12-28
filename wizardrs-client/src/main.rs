@@ -79,9 +79,6 @@ async fn main() -> Result<()> {
             // set theme preference
             cc.egui_ctx.set_theme(config.theme);
 
-            // set zoom
-            cc.egui_ctx.set_zoom_factor(1.2);
-
             install_image_loaders(&cc.egui_ctx);
             Ok(Box::new(App::new(config)))
         }),
