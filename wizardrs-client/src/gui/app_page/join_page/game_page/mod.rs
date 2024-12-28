@@ -1,6 +1,5 @@
 use crate::gui::App;
 use crate::interaction::GuiMessage;
-use eframe::emath::Align;
 use eframe::Frame;
 use egui::{Context, Image, Margin, RichText, Ui, Vec2};
 use egui_extras::Column;
@@ -123,7 +122,7 @@ impl App {
                             });
 
                         // chat message input
-                        ui.with_layout(egui::Layout::bottom_up(Align::Center), |ui| {
+                        ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                             egui::containers::Frame::none()
                                 .outer_margin(Margin::symmetric(2.0, 10.0))
                                 .show(ui, |ui| {

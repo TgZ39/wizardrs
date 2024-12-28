@@ -5,8 +5,10 @@ use crate::gui::app_page::settings_page::SettingsPage;
 use crate::gui::app_page::AppPage;
 use crate::image_cache::ImageCache;
 use crate::interaction::{GuiMessage, StateUpdate};
+use eframe::emath::Align;
 use eframe::Frame;
 use egui::Context;
+use std::ops::Deref;
 use std::sync::mpsc;
 use strum::IntoEnumIterator;
 
@@ -56,7 +58,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         self.update_state();
 
-        let bg_frame = egui::containers::Frame::default()
+        let bg_frame = egui::containers::Frame::side_top_panel(ctx.style().deref())
             .inner_margin(4.0)
             .fill(ctx.style().visuals.extreme_bg_color);
         egui::TopBottomPanel::top("top_panel")
@@ -72,6 +74,17 @@ impl eframe::App for App {
                         {
                             self.current_page = page;
                         }
+                    }
+                    if self.join_page.client.is_some() {
+                        // player is in a lobby
+                        ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                            ui.visuals_mut().button_frame = true;
+
+                            if ui.button("Leave Lobby").clicked() {
+                                let message = GuiMessage::LeaveLobby;
+                                self.handle_message(message);
+                            }
+                        });
                     }
                 });
             });

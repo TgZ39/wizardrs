@@ -18,4 +18,5 @@ pub enum GuiMessage {
         path: PathBuf,
     },
     DownloadAndrianKennardDeck,
+    LeaveLobby,
 }

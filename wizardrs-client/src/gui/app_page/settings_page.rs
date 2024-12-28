@@ -44,7 +44,7 @@ impl App {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Grid::new("settings").show(ui, |ui| {
                 // theme preference
-                ui.label("Dark/Light mode: ");
+                ui.label("Theme: ");
                 let mut theme_preference = ui.ctx().options(|opt| opt.theme_preference);
                 theme_preference.radio_buttons(ui);
 
