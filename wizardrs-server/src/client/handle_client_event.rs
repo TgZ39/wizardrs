@@ -150,8 +150,63 @@ impl WizardClient {
                 // check if self is player on turn
                 {
                     debug!("PlayCard: {card} passed check by {}", self.username);
+                    // check if that card can be played
+                    let can_be_played = {
+                        // wizard and fool can always be played
+                        if card.value == CardValue::Fool || card.value == CardValue::Wizard {
+                            true
+                        } else {
+                            let leading_color = {
+                                let mut result = None;
+                                let played_cards = self.server.played_cards.read().await.clone();
 
-                    // TODO check if the played card is valid
+                                for (card, _) in played_cards {
+                                    match card.value {
+                                        CardValue::Fool => continue,
+                                        CardValue::Simple(_) => {
+                                            result = Some(card.color);
+                                            break;
+                                        }
+                                        CardValue::Wizard => {
+                                            result = None;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                result
+                            };
+                            if let Some(leading_color) = leading_color {
+                                // there is a leading color which needs to be served
+
+                                // check if self has leading color
+                                let hand = self.hand.read().await.clone();
+                                if hand.iter().any(|hand_card| match hand_card.value {
+                                    CardValue::Fool => false,
+                                    CardValue::Simple(_) => hand_card.color == leading_color,
+                                    CardValue::Wizard => false,
+                                }) {
+                                    // self does have leading color
+                                    // only playable if it is a fool/wizard or of leading color
+                                    match card.value {
+                                        CardValue::Fool | CardValue::Wizard => true,
+                                        CardValue::Simple(_) => card.color == leading_color,
+                                    }
+                                } else {
+                                    // self does not have leading color so every card can be played
+                                    true
+                                }
+                            } else {
+                                // there is no color which needs to be served so every card can be played
+                                true
+                            }
+                        }
+                    };
+
+                    if !can_be_played {
+                        // invalid card
+                        return;
+                    }
 
                     // play card and broadcast to all clients
                     self.play_card(card).await;
@@ -235,7 +290,7 @@ impl WizardClient {
                     }
                 };
 
-                let game_phase = self.server.game_phase.read().await.clone();
+                let game_phase = *self.server.game_phase.read().await;
                 match game_phase {
                     GamePhase::Lobby => {}
                     GamePhase::Bidding => {}
