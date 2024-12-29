@@ -2,7 +2,7 @@
 
 use crate::config::Config;
 use crate::error::*;
-use crate::gui::App;
+use crate::gui::{App, APPLICATION, ORGANIZATION, QUALIFIER};
 use directories::ProjectDirs;
 use egui::ViewportBuilder;
 use egui_extras::install_image_loaders;
@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     // open config
-    let config = match ProjectDirs::from("de", "TgZ39", "Wizardrs") {
+    let config = match ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
         Some(proj_dirs) => {
             let mut config_path = proj_dirs.config_dir().to_path_buf();
             config_path.push("config.json");

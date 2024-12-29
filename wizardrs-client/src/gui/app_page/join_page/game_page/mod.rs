@@ -187,7 +187,7 @@ impl App {
                     for (index, round) in state.scoreboard.rounds.iter().enumerate() {
                         body.row(15.0, |mut row| {
                             row.col(|ui| {
-                                let round = format!("Round {}", index + 1);
+                                let round = format!("Round {: >2}", index + 1);
                                 ui.strong(round);
                             });
 
