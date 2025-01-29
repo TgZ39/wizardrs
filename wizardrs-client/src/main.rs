@@ -3,12 +3,17 @@
 use crate::config::Config;
 use crate::error::*;
 use crate::gui::{App, APPLICATION, ORGANIZATION, QUALIFIER};
+use chrono::Local;
 use directories::ProjectDirs;
 use egui::ViewportBuilder;
 use egui_extras::install_image_loaders;
+use std::fs;
+use std::fs::OpenOptions;
+use std::path::Path;
 use std::sync::Arc;
 use tracing::{error, info, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
+use tracing_subscriber::{fmt, FmtSubscriber, Registry};
 
 pub(crate) mod client;
 pub(crate) mod config;
@@ -18,15 +23,18 @@ pub(crate) mod image_cache;
 pub(crate) mod interaction;
 pub(crate) mod state;
 
+const MAX_LOGS: usize = 20;
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    // setup logger
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::TRACE)
-        .with_line_number(true)
-        .compact()
-        .finish();
-    tracing::subscriber::set_global_default(subscriber).unwrap();
+    // clean old logs
+    if let Some(proj_dirs) = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
+        let log_dir = proj_dirs.data_dir().join("logs");
+        clean_old_logs(&log_dir, MAX_LOGS)?;
+    }
+
+    setup_logger()?;
+    info!("started logger");
 
     // open config
     let config = match ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
@@ -83,6 +91,91 @@ async fn main() -> Result<()> {
             Ok(Box::new(App::new(config)))
         }),
     )?;
+
+    Ok(())
+}
+
+fn clean_old_logs(dir: &Path, max_logs: usize) -> Result<()> {
+    // get all paths of log files in dir
+    let mut file_paths = fs::read_dir(dir)?
+        .filter_map(|entry| entry.ok().map(|e| e.path()))
+        .filter(|path| path.is_file() && path.extension().is_some_and(|x| x == "log"))
+        .collect::<Vec<_>>();
+
+    // sort paths newest to oldest
+    file_paths.sort_by_key(|path| path.metadata().and_then(|meta| meta.modified()).ok());
+    file_paths.reverse();
+
+    while file_paths.len() > max_logs {
+        if let Some(oldest) = file_paths.pop() {
+            fs::remove_file(oldest)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn setup_logger() -> Result<()> {
+    // setup logger
+    if let Some(proj_dirs) = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
+        let log_dir = proj_dirs.data_dir().join("logs");
+        fs::create_dir_all(&log_dir)?;
+
+        let mut latest_file = log_dir.clone();
+        latest_file.push("latest.log");
+        let latest_log = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(latest_file)?;
+
+        let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+        let log_filename = format!("log-{}.log", timestamp);
+        let mut log_file = log_dir.clone();
+        log_file.push(log_filename);
+        let datetime_log = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_file)?;
+
+        let (latest_writer, latest_guard) = tracing_appender::non_blocking(latest_log);
+        let (datetime_writer, datetime_guard) = tracing_appender::non_blocking(datetime_log);
+
+        let console_layer = fmt::layer()
+            .compact()
+            .with_line_number(true)
+            .with_thread_names(true);
+        let latest_file_layer = fmt::layer()
+            .compact()
+            .with_line_number(true)
+            .with_thread_names(true)
+            .with_writer(latest_writer)
+            .with_ansi(false);
+        let datetime_file_layer = fmt::layer()
+            .compact()
+            .with_line_number(true)
+            .with_thread_names(true)
+            .with_writer(datetime_writer)
+            .with_ansi(false);
+
+        let subscriber = Registry::default()
+            .with(console_layer)
+            .with(latest_file_layer)
+            .with(datetime_file_layer);
+        tracing::subscriber::set_global_default(subscriber).expect("Failed to setup logger");
+
+        // prevent log file guard from being dropped
+        std::mem::forget(latest_guard);
+        std::mem::forget(datetime_guard);
+    } else {
+        println!("couldn't create log files");
+        let subscriber = FmtSubscriber::builder()
+            .with_max_level(Level::TRACE)
+            .with_line_number(true)
+            .compact()
+            .finish();
+        tracing::subscriber::set_global_default(subscriber).expect("Failed to setup logger");
+    }
 
     Ok(())
 }
