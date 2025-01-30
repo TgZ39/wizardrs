@@ -11,7 +11,7 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::{mpsc, Arc};
 use tokio::sync::Semaphore;
-use tracing::{debug, debug_span, instrument, Instrument};
+use tracing::{debug, instrument};
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
 use wizardrs_core::client_event::ClientEvent;
@@ -23,7 +23,7 @@ impl App {
         let state_tx = self.state_tx.clone();
         let client = self.join_page.client.clone();
 
-        let _join_handle = tokio::spawn(async move {
+        tokio::spawn(async move {
             debug!(?message, "handling message");
 
             match message {
@@ -271,6 +271,6 @@ impl App {
                     }
                 }
             }
-        }).instrument(debug_span!("message_handler_task"));
+        });
     }
 }

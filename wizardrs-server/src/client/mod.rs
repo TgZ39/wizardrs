@@ -102,13 +102,16 @@ impl WizardClient {
         let client = self.clone();
         let mut leave_rx = self.leave_tx.subscribe();
 
+        // receives events from external client
         tokio::spawn(async move {
-            debug!("starting event receiver task: {}", client.uuid);
+            debug!(?client.uuid, "starting event receiver task");
 
             let c = client.clone();
             let recv_fut = async move {
                 while let Some(Ok(msg)) = read.next().await {
                     if let Ok(event) = serde_json::from_str::<ClientEvent>(&msg.to_string()) {
+                        debug!(?event, "received event from client");
+
                         c.handle_client_event(event).await;
                     }
                 }
@@ -119,7 +122,7 @@ impl WizardClient {
                 _ = recv_fut => {}
             }
 
-            debug!("stopping event receiver task: {}", client.uuid);
+            debug!(?client.uuid, "stopping event receiver task");
             client.disconnect().await;
         });
     }
@@ -136,11 +139,13 @@ impl WizardClient {
             let mut leave_rx = self.leave_tx.subscribe();
 
             tokio::spawn(async move {
-                debug!("starting event sender task: {}", client.uuid);
+                debug!(?client.uuid, "starting event sender task");
 
                 let c = client.clone();
                 let send_fut = async move {
                     while let Some(event) = event_rx.recv().await {
+                        debug!(?event, "sending event to client");
+
                         let json = serde_json::to_string(&event).unwrap();
                         let msg = Message::text(json);
 
@@ -155,18 +160,18 @@ impl WizardClient {
                     _ = send_fut => {}
                 }
 
-                debug!("stopping event sender task: {}", client.uuid);
+                debug!(?client.uuid, "stopping event sender task");
                 client.disconnect().await;
             });
         }
 
-        // forward events from br to event sender
+        // forward events from broadcast to event sender
         {
             let client = self.clone();
             let mut leave_rx = self.leave_tx.subscribe();
 
             tokio::spawn(async move {
-                debug!("starting event forwarding task: {}", client.uuid);
+                debug!(?client.uuid, "starting event forwarding task");
 
                 let c = client.clone();
                 let broadcast_fut = async move {
@@ -180,7 +185,7 @@ impl WizardClient {
                     _ = broadcast_fut => {}
                 }
 
-                debug!("stopping event forwarding task: {}", client.uuid);
+                debug!(?client.uuid, "stopping event forwarding task");
                 client.disconnect().await;
             });
         }

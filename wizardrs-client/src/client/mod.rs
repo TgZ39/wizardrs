@@ -61,7 +61,7 @@ impl WizardClient {
 
         // send username
         let username_event = ClientEvent::SetUsername { username };
-        let json = serde_json::to_string(&username_event).unwrap();
+        let json = serde_json::to_string(&username_event)?;
         let msg = Message::text(json);
 
         if write.send(msg).await.is_err() {
@@ -90,11 +90,13 @@ impl WizardClient {
 
         // send events to server
         tokio::spawn(async move {
-            debug!("starting event sender task: {}", client.uuid);
+            debug!(?client.uuid, "starting event sender task");
 
             let c = client.clone();
             let send_fut = async move {
                 while let Some(event) = event_rx.recv().await {
+                    debug!(?event, "sending event to server");
+
                     // TODO write MessageHandler for WizardClient
                     // user has selected trump color, now inform client that he doesnt have to choose a color anymore
                     if let ClientEvent::SetTrumpColor { .. } = event {
@@ -116,7 +118,7 @@ impl WizardClient {
                 _ = send_fut => {}
             }
 
-            debug!("stopping event sender task: {}", client.uuid);
+            debug!(?client.uuid, "stopping event sender task");
             client.shutdown().await;
             client.disconnect();
         });
@@ -131,12 +133,14 @@ impl WizardClient {
 
         // receive events from server
         tokio::spawn(async move {
-            debug!("starting event receiver task: {}", client.uuid);
+            debug!(?client.uuid, "starting event receiver task");
 
             let c = client.clone();
             let recv_fut = async move {
                 while let Some(Ok(msg)) = read.next().await {
                     if let Ok(event) = serde_json::from_str(&msg.to_string()) {
+                        debug!(?event, "received event from server");
+
                         c.handle_server_event(event).await;
                     }
                 }
@@ -147,7 +151,7 @@ impl WizardClient {
                 _ = recv_fut => {}
             }
 
-            debug!("stopping event receiver task: {}", client.uuid);
+            debug!(?client.uuid, "stopping event receiver task");
             client.shutdown().await;
             client.disconnect();
         });

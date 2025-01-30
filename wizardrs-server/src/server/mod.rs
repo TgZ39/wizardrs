@@ -12,7 +12,7 @@ use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
 use tokio::sync::{broadcast, watch, RwLock};
-use tracing::{debug, info, trace};
+use tracing::{debug, info};
 use url::Url;
 use uuid::Uuid;
 use wizardrs_core::card::value::CardValue;
@@ -132,7 +132,7 @@ impl WizardServer {
                         drop(stream);
                         continue;
                     }
-                    debug!("new connection: {addr}");
+                    debug!(?addr, "new connection");
 
                     let client =
                         WizardClient::new(stream, server.clone(), self.broadcast_tx.subscribe())
@@ -170,6 +170,7 @@ impl WizardServer {
                         drop(conn);
                         continue;
                     }
+                    debug!(addr = ?conn.remote_addr(), "new connection");
 
                     let client =
                         WizardClient::new(conn, server.clone(), self.broadcast_tx.subscribe())
@@ -193,7 +194,7 @@ impl WizardServer {
 
     /// Adds WizardClient to player list, broadcasts a join event and updates the scoreboard.
     async fn add_client(self: &Arc<Self>, client: Arc<WizardClient>) {
-        debug!("successfully established connection to {}", client.uuid);
+        debug!(?client.uuid, "successfully established connection to client");
 
         // add client to server list
         self.clients
@@ -219,7 +220,7 @@ impl WizardServer {
 
     /// Send ServerEvent to all clients
     pub fn broadcast_event(self: &Arc<Self>, event: ServerEvent) {
-        trace!("broadcasting event: {:?}", event);
+        debug!(?event, "broadcasting event");
 
         let _ = self.broadcast_tx.send(event);
     }
@@ -245,7 +246,7 @@ impl WizardServer {
             // broadcast scoreboard change
             self.update_scoreboard().await;
 
-            debug!("disconnected client: {}", client.uuid);
+            debug!(?client.uuid, "disconnected client");
             self.update_player_list().await;
         }
     }
