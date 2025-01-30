@@ -11,7 +11,7 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::{mpsc, Arc};
 use tokio::sync::Semaphore;
-use tracing::{debug, instrument};
+use tracing::{debug, error, instrument};
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
 use wizardrs_core::client_event::ClientEvent;
@@ -45,9 +45,9 @@ impl App {
                         tokio::spawn(async move {
                             while let Ok(state) = local_state_rx.recv() {
                                 let update = StateUpdate::GameState(Some(state));
-                                state_tx
-                                    .send(update)
-                                    .expect("error sending GameState to GUI");
+                                if let Err(error) = state_tx.send(update) {
+                                    error!(?error, "error sending state update to GUI");
+                                }
                             }
                         });
                     }
