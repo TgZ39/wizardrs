@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use wizardrs_core::card::color::CardColor;
 use wizardrs_core::card::Card;
 
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Message {
     CreateServer {
         port: u16,

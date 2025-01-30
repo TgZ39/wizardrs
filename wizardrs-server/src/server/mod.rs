@@ -24,6 +24,7 @@ use wizardrs_core::trump_suit::TrumpSuit;
 
 pub mod builder;
 
+#[derive(Debug)]
 pub struct WizardServer {
     pub(crate) clients: Arc<RwLock<IndexMap<Uuid, Arc<WizardClient>>>>,
     broadcast_tx: broadcast::Sender<ServerEvent>,

@@ -18,6 +18,7 @@ use wizardrs_core::server_event::ServerEvent;
 pub(crate) mod handle_broadcast;
 pub(crate) mod handle_client_event;
 
+#[derive(Debug)]
 pub(crate) struct WizardClient {
     pub username: String,
     pub uuid: Uuid,

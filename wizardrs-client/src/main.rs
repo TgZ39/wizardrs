@@ -11,7 +11,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::path::Path;
 use std::sync::Arc;
-use tracing::{error, info, Level};
+use tracing::{debug, error, info, instrument, Level};
 use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use tracing_subscriber::{fmt, FmtSubscriber, Registry};
 
@@ -27,14 +27,14 @@ const MAX_LOGS: usize = 20;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    setup_logger()?;
+    debug!("started logger");
+
     // clean old logs
     if let Some(proj_dirs) = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
         let log_dir = proj_dirs.data_dir().join("logs");
         clean_old_logs(&log_dir, MAX_LOGS)?;
     }
-
-    setup_logger()?;
-    info!("started logger");
 
     // open config
     let config = match ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
         ..Default::default()
     };
 
-    info!("starting GUI");
+    info!(?config, "starting GUI");
     eframe::run_native(
         "Wizardrs",
         options,
@@ -95,6 +95,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[instrument(level = "debug")]
 fn clean_old_logs(dir: &Path, max_logs: usize) -> Result<()> {
     // get all paths of log files in dir
     let mut file_paths = fs::read_dir(dir)?
@@ -108,6 +109,7 @@ fn clean_old_logs(dir: &Path, max_logs: usize) -> Result<()> {
 
     while file_paths.len() > max_logs {
         if let Some(oldest) = file_paths.pop() {
+            debug!(log_file = ?oldest, "removing log file");
             fs::remove_file(oldest)?;
         }
     }

@@ -1,12 +1,14 @@
 use crate::client::WizardClient;
 use crate::state::player::Player;
 use std::sync::Arc;
+use tracing::instrument;
 use wizardrs_core::card::color::CardColor;
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::server_event::ServerEvent;
 
 impl WizardClient {
     /// Handle events being sent from the server to the client
+    #[instrument(skip(self))]
     pub(crate) async fn handle_server_event(self: &Arc<Self>, event: ServerEvent) {
         match event {
             ServerEvent::UpdatePlayerList { players } => {

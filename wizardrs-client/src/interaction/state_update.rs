@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use wizardrs_server::server::WizardServer;
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub enum StateUpdate {
     WizardClient(Option<Arc<WizardClient>>),
     WizardServer(Option<Arc<WizardServer>>),

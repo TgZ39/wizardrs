@@ -7,7 +7,7 @@ use wizardrs_core::card::color::CardColor;
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ImageCache {
     cards: HashMap<Card, PathBuf>,
     average_aspect_ratio: Option<f32>,

@@ -1,10 +1,14 @@
 use super::App;
 use crate::interaction::{Message, StateUpdate};
+use tracing::{debug, instrument};
 
 impl App {
+    #[instrument(skip(self))]
     pub fn update_state(&mut self) {
         // update state
         while let Ok(update) = self.state_rx.try_recv() {
+            debug!(?update, "processing state update");
+
             match update {
                 StateUpdate::WizardClient(client) => {
                     self.join_page.is_loading = false;
