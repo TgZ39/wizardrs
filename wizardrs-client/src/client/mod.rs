@@ -16,6 +16,7 @@ pub(crate) mod handle_server_event;
 
 #[derive(Debug)]
 pub struct WizardClient {
+    #[allow(dead_code)]
     pub username: String,
     pub uuid: Uuid,
     event_tx: mpsc::UnboundedSender<ClientEvent>,
@@ -46,6 +47,7 @@ impl WizardClient {
         };
 
         // receive uuid
+        #[allow(clippy::never_loop)]
         'outer: loop {
             while let Some(Ok(msg)) = read.next().await {
                 if let Ok(ServerEvent::SetUUID { uuid }) =

@@ -28,6 +28,7 @@ pub enum Message {
     SetTrumpColor {
         color: CardColor,
     },
+    #[allow(clippy::enum_variant_names)]
     SendChatMessage {
         msg: String,
     },

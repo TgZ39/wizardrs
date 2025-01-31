@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use ngrok::prelude::*;
 use ngrok::tunnel::TcpTunnel;
 use rand::prelude::SliceRandom;
-use rand::thread_rng;
+use rand::rng;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
@@ -138,9 +138,8 @@ impl WizardServer {
                         WizardClient::new(stream, server.clone(), self.broadcast_tx.subscribe())
                             .await;
 
-                    match client {
-                        Ok(client) => server.add_client(client).await,
-                        Err(_) => {}
+                    if let Ok(client) = client {
+                        server.add_client(client).await;
                     }
                 }
             };
@@ -176,9 +175,8 @@ impl WizardServer {
                         WizardClient::new(conn, server.clone(), self.broadcast_tx.subscribe())
                             .await;
 
-                    match client {
-                        Ok(client) => server.add_client(client).await,
-                        Err(_) => {}
+                    if let Ok(client) = client {
+                        server.add_client(client).await;
                     }
                 }
             };
@@ -306,7 +304,7 @@ impl WizardServer {
 
         // shuffle deck
         let mut deck = Card::all().to_vec();
-        deck.shuffle(&mut thread_rng());
+        deck.shuffle(&mut rng());
 
         // deal cards
         for client in self.clients.read().await.values() {
@@ -484,6 +482,7 @@ impl WizardServer {
     }
 
     /// Returns the player given the index
+    #[allow(dead_code)]
     pub(crate) async fn get_player(self: &Arc<Self>, index: u8) -> Arc<WizardClient> {
         let index = index % self.clients.read().await.len() as u8;
 

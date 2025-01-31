@@ -185,8 +185,14 @@ fn setup_logger() -> Result<()> {
 
 fn setup_panic_hook() {
     std::panic::set_hook(Box::new(|info| {
-        let location = info.location().map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column())).unwrap_or("unknown".to_string());
-        let message = info.payload().downcast_ref::<&str>().map_or_else(|| "unknown panic".to_string(), |s| s.to_string());
+        let location = info
+            .location()
+            .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
+            .unwrap_or("unknown".to_string());
+        let message = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map_or_else(|| "unknown panic".to_string(), |s| s.to_string());
 
         error!("Panic occurred: {} at {}", message, location);
     }));

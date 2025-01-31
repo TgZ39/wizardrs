@@ -1,5 +1,6 @@
 use crate::gui::App;
 use crate::interaction::Message;
+use eframe::emath::Align;
 use eframe::Frame;
 use egui::Context;
 use std::path::PathBuf;
@@ -98,6 +99,14 @@ impl App {
                         self.handle_message(message);
                     }
                 });
+            });
+
+            // github hyperlink
+            ui.with_layout(egui::Layout::bottom_up(Align::Center), |ui| {
+                ui.hyperlink_to(
+                    "wizardrs on GitHub",
+                    "https://www.github.com/TgZ39/wizardrs",
+                )
             });
         });
     }
