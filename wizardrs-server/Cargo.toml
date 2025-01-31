@@ -18,3 +18,6 @@ tracing = "0.1"
 indexmap = "2.7"
 url = "2.5"
 rand = "0.9"
+
+[lints.clippy]
+type_complexity = "allow"

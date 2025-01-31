@@ -11,3 +11,5 @@ uuid = { version = "1.12", features = ["v4", "serde"] }
 strum = { version = "0.26", features = ["derive"] }
 tracing = "0.1"
 
+[lints.clippy]
+type_complexity = "allow"
