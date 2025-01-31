@@ -193,7 +193,7 @@ impl App {
 
                             for (score, bid, won_tricks) in round {
                                 row.col(|ui| {
-                                    // check if this round has been player or is being played
+                                    // check if this round has been played or is being played
                                     if index < state.scoreboard.current_round as usize {
                                         let score = match score {
                                             Some(score) => format!("{: >3}", score),

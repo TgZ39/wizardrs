@@ -1,5 +1,6 @@
 use super::App;
 use crate::interaction::{Message, StateUpdate};
+use get_if_addrs::get_if_addrs;
 use tracing::{debug, instrument};
 
 impl App {
@@ -15,6 +16,33 @@ impl App {
                     self.join_page.client = client;
                 }
                 StateUpdate::WizardServer(server) => {
+                    if let Some(server) = &server {
+                        let mut interfaces = get_if_addrs()
+                            .map(|interfaces| {
+                                interfaces
+                                    .into_iter()
+                                    .filter_map(|interface| {
+                                        let mut url = server.local_url.clone();
+
+                                        if url.set_ip_host(interface.ip()).is_err()
+                                            || interface.ip().is_ipv6()
+                                        {
+                                            return None;
+                                        }
+
+                                        Some((interface.name, url))
+                                    })
+                                    .collect::<Vec<_>>()
+                            })
+                            .unwrap_or(vec![("unknown".to_string(), server.local_url.clone())]);
+
+                        if let Some(url) = &server.ngrok_url {
+                            interfaces.push(("ngrok".to_string(), url.clone()));
+                        }
+
+                        self.host_page.interfaces = interfaces;
+                    }
+
                     self.host_page.is_loading = false;
                     self.host_page.server = server;
                 }

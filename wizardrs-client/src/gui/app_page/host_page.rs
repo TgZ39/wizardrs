@@ -2,7 +2,10 @@ use crate::{gui::App, interaction::Message};
 use arboard::Clipboard;
 use eframe::Frame;
 use egui::{Color32, Context};
+use egui_extras::Column;
+use reqwest::Url;
 use std::sync::Arc;
+use tracing::error;
 use wizardrs_server::server::WizardServer;
 
 pub struct HostPage {
@@ -12,6 +15,7 @@ pub struct HostPage {
     pub authtoken: String,
     pub server: Option<Arc<WizardServer>>,
     pub is_loading: bool,
+    pub interfaces: Vec<(String, Url)>,
 }
 
 impl HostPage {
@@ -22,7 +26,8 @@ impl HostPage {
             show_authtoken: false,
             authtoken: String::new(),
             server: None,
-            is_loading: false, // indicate whether a server is being started
+            is_loading: false, // indicate whether a server is being started,
+            interfaces: vec![],
         }
     }
 
@@ -132,25 +137,63 @@ impl App {
                 );
             });
 
-            if let Some(server) = &self.host_page.server {
-                egui::Grid::new("url_grid").num_columns(2).show(ui, |ui| {
-                    let mut clipboard = Clipboard::new().unwrap();
+            if let Some(_server) = &self.host_page.server {
+                ui.separator();
 
-                    // local URL
-                    ui.label("local URL:");
-                    if ui.link(server.local_url.to_string()).clicked() {
-                        clipboard.set_text(server.local_url.to_string()).unwrap();
-                    };
-                    ui.end_row();
+                let table = egui_extras::TableBuilder::new(ui)
+                    .columns(Column::auto().resizable(false), 2)
+                    .striped(true)
+                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center));
 
-                    // ngrok url
-                    if let Some(url) = &server.ngrok_url {
-                        ui.label("ngrok URL:");
-                        if ui.link(url.to_string()).clicked() {
-                            clipboard.set_text(url.to_string()).unwrap();
+                table
+                    .header(15.0, |mut header| {
+                        header.col(|ui| {
+                            ui.strong("Interface");
+                        });
+
+                        header.col(|ui| {
+                            ui.strong("URL");
+                        });
+                    })
+                    .body(|mut body| {
+                        let mut clipboard = Clipboard::new().unwrap();
+
+                        for (interface, url) in &self.host_page.interfaces {
+                            body.row(15.0, |mut row| {
+                                // interface
+                                row.col(|ui| {
+                                    ui.monospace(interface);
+                                });
+                                // url
+                                row.col(|ui| {
+                                    if ui.link(url.to_string()).clicked() {
+                                        if let Err(err) = clipboard.set_text(url.to_string()) {
+                                            error!(?err, "couldn't copy URL to clipboard")
+                                        }
+                                    }
+                                });
+                            });
                         }
-                    }
-                });
+                    });
+
+                // egui::Grid::new("url_grid").num_columns(2).show(ui, |ui| {
+                //     let mut clipboard = Clipboard::new().unwrap();
+                //
+                //     // local URL
+                //     ui.label("local URL:");
+                //     if ui.link(server.local_url.to_string()).clicked() {
+                //         clipboard.set_text(server.local_url.to_string()).unwrap();
+                //     };
+                //     ui.end_row();
+                //
+                //     // ngrok url
+                //     if let Some(url) = &server.ngrok_url {
+                //         ui.label("ngrok URL:");
+                //         if ui.link(url.to_string()).clicked() {
+                //             clipboard.set_text(url.to_string()).unwrap();
+                //         }
+                //     }
+                // });
             }
         });
     }

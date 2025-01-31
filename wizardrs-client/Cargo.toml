@@ -23,8 +23,9 @@ egui_extras = { version = "0.30", features = ["all_loaders"] }
 serde = { version = "1.0", features = ["derive"] }
 directories = "6.0"
 reqwest = "0.12"
-image = { version = "0.25.5", features = ["webp", "png", "jpeg", "gif"] }
+image = { version = "0.25", features = ["webp", "png", "jpeg", "gif"] }
 rfd = "0.15"
 log = "0.4"
 chrono = "0.4"
 tracing-appender = "0.2"
+get_if_addrs = "0.5"
