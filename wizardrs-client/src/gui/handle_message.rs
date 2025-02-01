@@ -9,6 +9,7 @@ use rfd::FileDialog;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{mpsc, Arc};
 use tokio::sync::Semaphore;
 use tracing::{debug, error, instrument};
@@ -79,6 +80,13 @@ impl App {
                         .expect("error sending ImageCache to GUI");
                 }
                 Message::DownloadAndrianKennardDeck => {
+                    let download_progress = Arc::new(AtomicU8::new(0));
+                    let update =
+                        StateUpdate::DownloadingAdrianKennardProgress(download_progress.clone());
+                    state_tx
+                        .send(update)
+                        .expect("error sending download progress to GUI");
+
                     let base_url = "https://raw.githubusercontent.com/TgZ39/wizardrs/refs/heads/master/adrian-kennard/".to_string();
                     let deck_base_path =
                         if let Some(proj_dirs) = ProjectDirs::from("de", "TgZ39", "Wizardrs") {
@@ -103,6 +111,8 @@ impl App {
 
                         let deck_base_path = deck_base_path.clone();
                         let base_url = base_url.clone();
+
+                        let progress = download_progress.clone();
 
                         let handle = tokio::spawn(async move {
                             let permit = semaphore.acquire().await.expect("error acquiring permit");
@@ -142,6 +152,7 @@ impl App {
                             file.write_all(&bytes).expect("error saving file");
 
                             drop(permit);
+                            progress.fetch_add(1, Ordering::Relaxed);
                         });
                         handles.push(handle);
                     }

@@ -4,10 +4,13 @@ use eframe::emath::Align;
 use eframe::Frame;
 use egui::Context;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::Arc;
 
 pub struct SettingsPage {
     pub deck_paths: Vec<PathBuf>,
     pub downloading_adrian_kennard: bool,
+    pub download_progress: Option<Arc<AtomicU8>>,
 }
 
 impl SettingsPage {
@@ -15,6 +18,7 @@ impl SettingsPage {
         Self {
             deck_paths: vec![],
             downloading_adrian_kennard: false,
+            download_progress: None,
         }
     }
 }
@@ -85,7 +89,15 @@ impl App {
 
                     // download Adrian Kennard deck button
                     ui.add_enabled_ui(!self.settings_page.downloading_adrian_kennard, |ui| {
-                        if ui.button("Download adrian-kennard deck").clicked() {
+                        let text = match &self.settings_page.download_progress {
+                            Some(progress) => format!(
+                                "Download adrian-kennard deck ({}/60)",
+                                progress.load(Ordering::Relaxed)
+                            ),
+                            None => "Download adrian-kennard deck".to_string(),
+                        };
+
+                        if ui.button(text).clicked() {
                             self.settings_page.downloading_adrian_kennard = true;
 
                             let message = Message::DownloadAndrianKennardDeck;

@@ -54,9 +54,13 @@ impl App {
                 }
                 StateUpdate::FinishedDownloadingAdrianKennard => {
                     self.settings_page.downloading_adrian_kennard = false;
+                    self.settings_page.download_progress = None;
 
                     let message = Message::RequestUpdateDeckList;
                     self.handle_message(message);
+                }
+                StateUpdate::DownloadingAdrianKennardProgress(progress) => {
+                    self.settings_page.download_progress = Some(progress);
                 }
                 StateUpdate::UpdateDeckList(deck) => {
                     self.settings_page.deck_paths = deck;

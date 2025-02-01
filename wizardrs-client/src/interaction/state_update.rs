@@ -1,6 +1,7 @@
 use crate::image_cache::ImageCache;
 use crate::{client::WizardClient, state::GameState};
 use std::path::PathBuf;
+use std::sync::atomic::AtomicU8;
 use std::sync::Arc;
 use wizardrs_server::server::WizardServer;
 
@@ -12,4 +13,5 @@ pub enum StateUpdate {
     ImageCache(Option<ImageCache>),
     UpdateDeckList(Vec<PathBuf>),
     FinishedDownloadingAdrianKennard,
+    DownloadingAdrianKennardProgress(Arc<AtomicU8>),
 }
