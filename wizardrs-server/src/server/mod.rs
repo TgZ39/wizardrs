@@ -433,14 +433,8 @@ impl WizardServer {
     }
 
     /// Returns the sum of bids of every player in the current round
-    pub async fn sum_bids(self: &Arc<Self>) -> u8 {
-        self.scoreboard
-            .read()
-            .await
-            .get_current_round()
-            .expect("current round should be valid")
-            .iter()
-            .fold(0, |acc, (_, bid, _)| acc + bid.unwrap_or(0))
+    pub async fn sum_bids(self: &Arc<Self>) -> u32 {
+        self.scoreboard.read().await.sum_bids()
     }
 
     /// Broadcasts the scoreboard to all clients

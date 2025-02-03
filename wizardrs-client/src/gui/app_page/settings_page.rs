@@ -95,16 +95,14 @@ impl App {
                             let message = Message::DownloadAndrianKennardDeck;
                             self.handle_message(message);
                         }
-                    } else {
-                        if let Some(progress) = &self.settings_page.download_progress {
-                            let percent = progress.load(Ordering::Relaxed) as f32 / 60.0;
+                    } else if let Some(progress) = &self.settings_page.download_progress {
+                        let percent = progress.load(Ordering::Relaxed) as f32 / 60.0;
 
-                            ui.add(ProgressBar::new(percent).desired_width(232.0));
-                        } else {
-                            ui.add_enabled_ui(false, |ui| {
-                                let _ = ui.button("Download adrian-kennard deck");
-                            });
-                        }
+                        ui.add(ProgressBar::new(percent).desired_width(232.0));
+                    } else {
+                        ui.add_enabled_ui(false, |ui| {
+                            let _ = ui.button("Download adrian-kennard deck");
+                        });
                     }
 
                     // import zip button

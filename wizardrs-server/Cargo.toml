@@ -24,6 +24,3 @@ tracing.workspace = true
 indexmap.workspace = true
 url.workspace = true
 rand.workspace = true
-
-[lints.clippy]
-type_complexity = "allow"

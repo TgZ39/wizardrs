@@ -8,6 +8,7 @@ use tracing::error;
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
 use wizardrs_core::game_phase::GamePhase;
+use wizardrs_core::scoreboard::round_entry::RoundEntry;
 use wizardrs_core::server_event::ServerEvent;
 use wizardrs_core::trump_suit::TrumpSuit;
 
@@ -52,8 +53,11 @@ impl App {
                             out.push_str(&player.username);
 
                             // won tricks vs bid tricks
-                            if let Some((_score, Some(bid), won_tricks)) =
-                                state.scoreboard.get_entry(player.uuid)
+                            if let Some(RoundEntry {
+                                bid: Some(bid),
+                                won_tricks,
+                                ..
+                            }) = state.scoreboard.get_entry(player.uuid)
                             {
                                 out.push_str(&format!(" [{}/{}]", won_tricks, bid));
                             }
@@ -191,16 +195,16 @@ impl App {
                                 ui.strong(round);
                             });
 
-                            for (score, bid, won_tricks) in round {
+                            for entry in round {
                                 row.col(|ui| {
                                     // check if this round has been played or is being played
                                     if index < state.scoreboard.current_round as usize {
-                                        let score = match score {
+                                        let score = match entry.score {
                                             Some(score) => format!("{: >3}", score),
                                             None => "   ".to_string(),
                                         };
-                                        let bid = match bid {
-                                            Some(bid) => format!("{}/{}", won_tricks, bid),
+                                        let bid = match entry.bid {
+                                            Some(bid) => format!("{}/{}", entry.won_tricks, bid),
                                             None => "   ".to_string(),
                                         };
 

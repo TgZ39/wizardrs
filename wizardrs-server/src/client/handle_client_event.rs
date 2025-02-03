@@ -41,7 +41,7 @@ impl WizardClient {
                 let current_phase = self.server.game_phase.read().await.to_owned();
                 if current_phase == GamePhase::Bidding // check if it is bidding phase
                     && self.uuid == self.server.get_player_on_turn().await.uuid // check if self is player on turn
-                    && self.server.scoreboard.read().await.get_entry(self.uuid).is_some_and(|(_, bid, _)| bid.is_none())
+                    && self.server.scoreboard.read().await.get_entry(self.uuid).is_some_and(|entry| entry.bid.is_none())
                 // check if self has already bid
                 {
                     trace!("MakeBid: {bid} passed check by {}", self.username);
@@ -92,7 +92,7 @@ impl WizardClient {
                         // set player on turn to first bidder because he is the player left of the dealer
                         let first_bidder = self.server.get_first_bidder().await;
                         let index = first_bidder.index().await;
-                        self.server.set_player_on_turn(index as u8).await;
+                        self.server.set_player_on_turn(index).await;
                     } else {
                         trace!("MakeBid: {bid} is not last id by {}", self.username);
                         // there are other players who need to make a bid so increment the player on turn by 1
@@ -130,9 +130,7 @@ impl WizardClient {
                     let first_bidder = self.server.get_first_bidder().await;
                     let index_first_bidder = first_bidder.index().await;
 
-                    self.server
-                        .set_player_on_turn(index_first_bidder as u8)
-                        .await;
+                    self.server.set_player_on_turn(index_first_bidder).await;
                 }
             }
             ClientEvent::PlayCard { card } => {

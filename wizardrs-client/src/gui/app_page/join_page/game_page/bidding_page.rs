@@ -83,7 +83,7 @@ impl App {
                                 // check if self is last player to bid
                                 if state.is_last_to_bid(client.uuid).is_some_and(|b| b) {
                                     // find disallowed bid
-                                    let sum_bids = state.scoreboard.bid_sum();
+                                    let sum_bids = state.scoreboard.sum_bids();
                                     let current_round = state.scoreboard.current_round;
                                     bid = current_round as i32 - sum_bids as i32;
                                 }
