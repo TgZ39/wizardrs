@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
-derive_more = { version = "1.0", features = ["display"] }
+derive_more = { version = "2.0", features = ["display"] }
 uuid = { version = "1.12", features = ["v4", "serde"] }
 strum = { version = "0.26", features = ["derive"] }
 tracing = "0.1"
