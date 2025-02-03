@@ -12,7 +12,7 @@ description = "Remake of the Wizard card game by Amigo with multiplayer"
 edition = "2021"
 license = "GPL-3.0-or-later"
 readme = "README.md"
-version = "0.1.1"
+version = "0.1.2"
 repository = "https://github.com/TgZ39/wizardrs"
 homepage = "https://github.com/TgZ39"
 
