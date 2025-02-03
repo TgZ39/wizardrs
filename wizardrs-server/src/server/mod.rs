@@ -24,6 +24,8 @@ use wizardrs_core::trump_suit::TrumpSuit;
 
 pub mod builder;
 
+pub(crate) type OwnedCard = (Card, Arc<WizardClient>);
+
 #[derive(Debug)]
 pub struct WizardServer {
     pub(crate) clients: Arc<RwLock<IndexMap<Uuid, Arc<WizardClient>>>>,
@@ -32,7 +34,7 @@ pub struct WizardServer {
     pub local_url: Url,
     pub ngrok_url: Option<Url>,
 
-    pub(crate) played_cards: Arc<RwLock<Vec<(Card, Arc<WizardClient>)>>>,
+    pub(crate) played_cards: Arc<RwLock<Vec<OwnedCard>>>,
     pub(crate) game_phase: Arc<RwLock<GamePhase>>,
     pub(crate) current_round: Arc<AtomicU8>,
     pub(crate) current_trick: Arc<AtomicU8>, // keeps track of the current trick in the round. used to check if the next trick or the next round needs to start
