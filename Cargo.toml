@@ -5,3 +5,45 @@ members = [
     "wizardrs-server",
     "wizardrs-client"
 ]
+
+[workspace.package]
+authors = ["TgZ39"]
+description = "Remake of the Wizard card game by Amigo with multiplayer"
+edition = "2021"
+license = "GPL-3.0-or-later"
+readme = "README.md"
+version = "0.1.1"
+repository = "https://github.com/TgZ39/wizardrs"
+homepage = "https://github.com/TgZ39"
+
+[workspace.dependencies]
+wizardrs-core = { path = "wizardrs-core" }
+wizardrs-server = { path = "wizardrs-server" }
+
+tokio = { version = "1.43", features = ["rt-multi-thread"] }
+tokio-tungstenite = "0.26"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+serde_json = "1.0"
+futures = "0.3"
+derive_more = { version = "2.0", features = ["full"] }
+thiserror = "2.0"
+uuid = { version = "1.12", features = ["v4", "serde"] }
+egui = { version = "0.30", features = ["serde"] }
+eframe = "0.30"
+strum = { version = "0.26", features = ["derive"] }
+arboard = "3.4"
+egui_extras = { version = "0.30", features = ["all_loaders"] }
+serde = { version = "1.0", features = ["derive"] }
+directories = "6.0"
+reqwest = "0.12"
+image = { version = "0.25", features = ["webp", "png", "jpeg", "gif"]}
+rfd = "0.15"
+log = "0.4"
+chrono = "0.4"
+tracing-appender = "0.2"
+get_if_addrs = "0.5"
+indexmap = "2.7"
+ngrok = "0.13"
+rand = "0.9"
+url = "2.5"

@@ -1,15 +1,21 @@
 [package]
 name = "wizardrs-core"
-version = "0.1.1"
-edition = "2021"
+description.workspace = true
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme.workspace = true
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-thiserror = "2.0"
-derive_more = { version = "1.0", features = ["display"] }
-uuid = { version = "1.12", features = ["v4", "serde"] }
-strum = { version = "0.26", features = ["derive"] }
-tracing = "0.1"
+serde.workspace = true
+thiserror.workspace = true
+derive_more.workspace = true
+uuid.workspace = true
+strum.workspace = true
+tracing.workspace = true
 
 [lints.clippy]
 type_complexity = "allow"
