@@ -1,6 +1,6 @@
 [package]
 name = "wizardrs-core"
-description.workspace = true
+description = "Common types between client and server"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

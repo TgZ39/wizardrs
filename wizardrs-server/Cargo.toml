@@ -1,6 +1,6 @@
 [package]
 name = "wizardrs-server"
-description.workspace = true
+description = "Backend for the wizardrs project"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

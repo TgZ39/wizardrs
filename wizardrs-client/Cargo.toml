@@ -1,6 +1,6 @@
 [package]
 name = "wizardrs-client"
-description.workspace = true
+description = "Frontend for the wizardrs project"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -36,3 +36,5 @@ log.workspace = true
 chrono.workspace = true
 tracing-appender.workspace = true
 get_if_addrs.workspace = true
+self_update.workspace = true
+semver.workspace = true
