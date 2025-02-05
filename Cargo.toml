@@ -49,3 +49,4 @@ rand = "0.9"
 url = "2.5"
 self_update = "0.42"
 semver = "1.0"
+openssl = { version = "0.10", features = ["vendored"] }
