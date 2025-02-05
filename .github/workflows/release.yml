@@ -51,3 +51,4 @@ jobs:
           executable-name: wizardrs
           target: ${{ matrix.platform.target }}
           working-directory: 'wizardrs-client'
+          changes-file: ''
