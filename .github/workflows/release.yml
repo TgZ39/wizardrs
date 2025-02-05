@@ -4,7 +4,6 @@ on:
 permissions:
   contents: write
 env:
-  GITHUB_TOKEN: ${{ github.token }}
   RUST_BACKTRACE: 1
   CACHE_ON_FAILURE: true
 jobs:
@@ -59,3 +58,7 @@ jobs:
           executable-name: 'wizardrs-client'
           target: ${{ matrix.platform.target }}
           changes-file: ''
+        env:
+          GITHUB_TOKEN: $ {{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - name: Display structure of downloaded files
+        run: ls -R
