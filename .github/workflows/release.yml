@@ -5,6 +5,7 @@ on:
 jobs:
   release:
     name: Release - ${{ matrix.platform.os-name }}
+    continue-on-error: true
     strategy:
       matrix:
         platform:
@@ -42,7 +43,7 @@ jobs:
           command: "build"
           target: ${{ matrix.platform.target }}
           args: "--release"
-          strip: true
+          strip: false
           working-directory: 'wizardrs-client'
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
