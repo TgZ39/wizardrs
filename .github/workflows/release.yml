@@ -44,11 +44,9 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--release"
           strip: false
-          working-directory: 'wizardrs-client'
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
           executable-name: 'wizardrs-client'
           target: ${{ matrix.platform.target }}
-          working-directory: 'wizardrs-client'
           changes-file: ''
