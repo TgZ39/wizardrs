@@ -96,10 +96,10 @@ impl App {
                 egui::CentralPanel::default()
                     .frame(
                         egui::Frame::central_panel(ctx.style().deref()).inner_margin(Margin {
-                            left: 0.0,
-                            right: 0.0,
-                            top: 5.0,
-                            bottom: 0.0,
+                            left: 0,
+                            right: 0,
+                            top: 5,
+                            bottom: 0,
                         }),
                     )
                     .show_inside(ui, |ui| {
@@ -126,8 +126,8 @@ impl App {
 
                         // chat message input
                         ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-                            egui::containers::Frame::none()
-                                .outer_margin(Margin::symmetric(2.0, 10.0))
+                            egui::containers::Frame::new()
+                                .outer_margin(Margin::symmetric(2, 10))
                                 .show(ui, |ui| {
                                     resp = Some(
                                         ui.text_edit_singleline(&mut self.join_page.chat_input),
@@ -276,7 +276,7 @@ impl App {
                         TrumpSuit::Card(card) => {
                             if let Some(path) = get_image_path(card) {
                                 let image = Image::new(path)
-                                    .rounding(10.0)
+                                    .corner_radius(10.0)
                                     .max_size(Vec2::new(120.0, 120.0 * average_aspect_ratio)) // image aspect ratio is ~ 1:1.57
                                     .fit_to_exact_size(Vec2::new(
                                         120.0,
@@ -286,7 +286,7 @@ impl App {
                             } else {
                                 // button is always disabled
                                 let button = egui::Button::new(card.to_string())
-                                    .rounding(10.0)
+                                    .corner_radius(10.0)
                                     .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
                                 ui.horizontal(|ui| {
                                     // horizontal because button text is left aligned in vertical layout
@@ -299,7 +299,7 @@ impl App {
                         TrumpSuit::Color(card, color) => {
                             if let Some(path) = get_image_path(card) {
                                 let image = Image::new(path)
-                                    .rounding(10.0)
+                                    .corner_radius(10.0)
                                     .max_size(Vec2::new(120.0, 120.0 * average_aspect_ratio)) // image aspect ratio is ~ 1:1.57
                                     .fit_to_exact_size(Vec2::new(
                                         120.0,
@@ -309,7 +309,7 @@ impl App {
                             } else {
                                 // button is always disabled
                                 let button = egui::Button::new(card.to_string())
-                                    .rounding(10.0)
+                                    .corner_radius(10.0)
                                     .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
                                 ui.horizontal(|ui| {
                                     // horizontal because button text is left aligned in vertical layout
@@ -331,7 +331,7 @@ impl App {
                         TrumpSuit::None => {
                             // button is always disabled
                             let button = egui::Button::new("No Trump Card")
-                                .rounding(10.0)
+                                .corner_radius(10.0)
                                 .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
                             ui.horizontal(|ui| {
                                 // horizontal because button text is left aligned in vertical layout
@@ -362,7 +362,7 @@ impl App {
                             ui.vertical(|ui| {
                                 if let Some(path) = get_image_path(card) {
                                     let image = Image::new(path)
-                                        .rounding(10.0)
+                                        .corner_radius(10.0)
                                         .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
                                         .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
                                     ui.add_sized(Vec2::new(120.0, 120.0 * 1.57), image);
@@ -371,7 +371,7 @@ impl App {
                                 } else {
                                     // button is always disabled
                                     let button = egui::Button::new(card.to_string())
-                                        .rounding(10.0)
+                                        .corner_radius(10.0)
                                         .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
                                     ui.horizontal(|ui| {
                                         // horizontal because button text is left aligned in vertical layout
@@ -486,7 +486,7 @@ impl App {
                             let resp = {
                                 if let Some(path) = get_image_path(card) {
                                     let image = Image::new(path)
-                                        .rounding(10.0)
+                                        .corner_radius(10.0)
                                         .max_size(Vec2::new(120.0, 120.0 * 1.57)) // image aspect ratio is ~ 1:1.57
                                         .fit_to_exact_size(Vec2::new(120.0, 120.0 * 1.57));
                                     let button = egui::ImageButton::new(image);
@@ -495,7 +495,7 @@ impl App {
                                 } else {
                                     // button is always disabled
                                     let button = egui::Button::new(card.to_string())
-                                        .rounding(10.0)
+                                        .corner_radius(10.0)
                                         .min_size(Vec2::new(120.0, 120.0 * average_aspect_ratio));
                                     ui.add_enabled(check_enabled(card), button)
                                 }

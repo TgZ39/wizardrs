@@ -65,6 +65,9 @@ impl App {
                 StateUpdate::UpdateDeckList(deck) => {
                     self.settings_page.deck_paths = deck;
                 }
+                StateUpdate::LatestRelease(release) => {
+                    self.settings_page.latest_release = Some(release);
+                }
             }
         }
     }

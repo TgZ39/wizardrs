@@ -55,8 +55,10 @@ impl App {
         }
 
         // request deck list update
-        let message = Message::RequestUpdateDeckList;
-        app.handle_message(message);
+        app.handle_message(Message::RequestUpdateDeckList);
+
+        // check for updates
+        app.handle_message(Message::GetLatestRelease);
 
         app
     }

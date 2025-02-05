@@ -34,4 +34,5 @@ pub enum Message {
     },
     ImportDeck,
     RequestUpdateDeckList,
+    GetLatestRelease,
 }

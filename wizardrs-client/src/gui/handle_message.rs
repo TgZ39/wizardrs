@@ -6,13 +6,13 @@ use crate::{
 };
 use directories::ProjectDirs;
 use rfd::FileDialog;
-use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{mpsc, Arc};
+use std::{fs, thread};
 use tokio::sync::Semaphore;
-use tracing::{debug, error, instrument};
+use tracing::{debug, error, info, instrument};
 use wizardrs_core::card::value::CardValue;
 use wizardrs_core::card::Card;
 use wizardrs_core::client_event::ClientEvent;
@@ -250,7 +250,10 @@ impl App {
                         deck_dir.push("decks");
 
                         let mut out = Vec::new();
-                        for entry in fs::read_dir(deck_dir).unwrap().flatten() {
+                        for entry in fs::read_dir(deck_dir)
+                            .expect("error reading deck dir")
+                            .flatten()
+                        {
                             if entry.path().is_dir() {
                                 out.push(entry.path().to_path_buf());
                             }
@@ -267,9 +270,13 @@ impl App {
                     {
                         let mut deck_dir = proj_dirs.data_dir().to_path_buf();
                         deck_dir.push("decks");
+                        fs::create_dir_all(&deck_dir).expect("error creating deck dir");
 
                         let mut out = Vec::new();
-                        for entry in fs::read_dir(deck_dir).unwrap().flatten() {
+                        for entry in fs::read_dir(deck_dir)
+                            .expect("error reading deck dir")
+                            .flatten()
+                        {
                             if entry.path().is_dir() {
                                 out.push(entry.path().to_path_buf());
                             }
@@ -280,6 +287,35 @@ impl App {
                             .send(update)
                             .expect("error sending StateUpdate to GUI");
                     }
+                }
+                Message::GetLatestRelease => {
+                    thread::spawn(move || {
+                        let releases = self_update::backends::github::ReleaseList::configure()
+                            .repo_owner("TgZ39")
+                            .repo_name("wizardrs")
+                            .build()
+                            .unwrap()
+                            .fetch();
+
+                        match releases {
+                            Ok(releases) => {
+                                info!("found releases: {releases:#?}");
+
+                                let update = StateUpdate::LatestRelease(Some(releases[0].clone()));
+                                state_tx
+                                    .send(update)
+                                    .expect("error sending StateUpdate to GUI");
+                            }
+                            Err(err) => {
+                                error!(?err, "error checking for releases");
+
+                                let update = StateUpdate::LatestRelease(None);
+                                state_tx
+                                    .send(update)
+                                    .expect("error sending StateUpdate to GUI");
+                            }
+                        }
+                    });
                 }
             }
         });

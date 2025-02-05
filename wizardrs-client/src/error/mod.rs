@@ -11,6 +11,7 @@ pub enum Error {
     WizardServer(#[from] wizardrs_server::error::Error),
     Io(#[from] io::Error),
     Serde(#[from] serde_json::error::Error),
+    SelfUpdate(#[from] self_update::errors::Error),
     ConnectionClosed,
     Other(String),
 }

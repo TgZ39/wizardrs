@@ -3,6 +3,8 @@ use crate::interaction::Message;
 use eframe::emath::Align;
 use eframe::Frame;
 use egui::{Context, ProgressBar};
+use self_update::update::Release;
+use semver::{Version, VersionReq};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
@@ -11,6 +13,7 @@ pub struct SettingsPage {
     pub deck_paths: Vec<PathBuf>,
     pub downloading_adrian_kennard: bool,
     pub download_progress: Option<Arc<AtomicU8>>,
+    pub latest_release: Option<Option<Release>>,
 }
 
 impl SettingsPage {
@@ -19,6 +22,7 @@ impl SettingsPage {
             deck_paths: vec![],
             downloading_adrian_kennard: false,
             download_progress: None,
+            latest_release: None,
         }
     }
 }
@@ -28,7 +32,7 @@ impl App {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Grid::new("settings").show(ui, |ui| {
                 // theme preference
-                ui.label("Theme: ");
+                ui.strong("Theme:");
                 let mut theme_preference = ui.ctx().options(|opt| opt.theme_preference);
                 theme_preference.radio_buttons(ui);
 
@@ -37,7 +41,7 @@ impl App {
                 ui.end_row();
 
                 // deck selection
-                ui.label("Deck: ");
+                ui.strong("Deck:");
                 let selected_name = match &self.config.card_deck {
                     None => "None".to_string(),
                     Some(path) => path.file_name().unwrap().to_string_lossy().to_string(),
@@ -111,6 +115,39 @@ impl App {
                         self.handle_message(message);
                     }
                 });
+                ui.end_row();
+
+                // update status
+                ui.strong("Update status:");
+                ui.horizontal(|ui| {
+                    match &self.settings_page.latest_release {
+                        Some(release) => match release {
+                            Some(release) => {
+                                const VERSION: &str = env!("CARGO_PKG_VERSION");
+                                let latest_version = Version::parse(&release.version).unwrap();
+
+                                let req = VersionReq::parse(&format!(">{VERSION}")).unwrap();
+                                if req.matches(&latest_version) {
+                                    ui.label("New version found, download");
+                                    ui.hyperlink_to(
+                                        "here",
+                                        "https://www.github.com/TgZ39/wizardrs/releases/latest",
+                                    );
+                                } else {
+                                    ui.label("No updates available");
+                                }
+                            }
+                            None => {
+                                ui.label("Error checking for updates");
+                            }
+                        },
+                        None => {
+                            ui.label("Checking");
+                            ui.spinner();
+                        }
+                    };
+                });
+                ui.end_row();
             });
 
             // github hyperlink
