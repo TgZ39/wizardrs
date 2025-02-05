@@ -4,6 +4,7 @@ on:
 env:
   GITHUB_TOKEN: ${{ github.token }}
   RUST_BACKTRACE: 1
+  CACHE_ON_FAILURE: true
 jobs:
   release:
     name: Release - ${{ matrix.platform.os-name }}
@@ -39,6 +40,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Display structure of downloaded files
+        run: ls -R
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         with:
@@ -46,6 +49,8 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--release"
           strip: false
+      - name: Display structure of downloaded files
+        run: ls -R
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
