@@ -7,7 +7,7 @@ use crate::image_cache::ImageCache;
 use crate::interaction::{Message, StateUpdate};
 use eframe::emath::Align;
 use eframe::Frame;
-use egui::Context;
+use egui::{Color32, Context};
 use std::ops::Deref;
 use std::sync::mpsc;
 use strum::IntoEnumIterator;
@@ -78,7 +78,15 @@ impl eframe::App for App {
                     ui.visuals_mut().button_frame = false;
 
                     for page in AppPage::iter() {
-                        if ui
+                        if page == AppPage::Settings && self.update_available() {
+                            let text = egui::RichText::new("•Settings•").color(Color32::LIGHT_RED);
+                            if ui
+                                .selectable_label(page == self.current_page, text)
+                                .clicked()
+                            {
+                                self.current_page = page;
+                            }
+                        } else if ui
                             .selectable_label(page == self.current_page, page.to_string())
                             .clicked()
                         {

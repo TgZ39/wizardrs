@@ -122,12 +122,8 @@ impl App {
                 ui.horizontal(|ui| {
                     match &self.settings_page.latest_release {
                         Some(release) => match release {
-                            Some(release) => {
-                                const VERSION: &str = env!("CARGO_PKG_VERSION");
-                                let latest_version = Version::parse(&release.version).unwrap();
-
-                                let req = VersionReq::parse(&format!(">{VERSION}")).unwrap();
-                                if req.matches(&latest_version) {
+                            Some(_release) => {
+                                if self.update_available() {
                                     ui.label("New version found, download");
                                     ui.hyperlink_to(
                                         "here",
@@ -158,5 +154,17 @@ impl App {
                 )
             });
         });
+    }
+
+    pub fn update_available(&self) -> bool {
+        if let Some(Some(release)) = &self.settings_page.latest_release {
+            const VERSION: &str = env!("CARGO_PKG_VERSION");
+            let latest_version = Version::parse(&release.version).unwrap();
+
+            let req = VersionReq::parse(&format!(">{VERSION}")).unwrap();
+            req.matches(&latest_version)
+        } else {
+            false
+        }
     }
 }
