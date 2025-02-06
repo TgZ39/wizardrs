@@ -38,4 +38,3 @@ tracing-appender.workspace = true
 get_if_addrs.workspace = true
 self_update.workspace = true
 semver.workspace = true
-openssl.workspace = true

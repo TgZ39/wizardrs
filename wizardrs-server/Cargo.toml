@@ -24,4 +24,3 @@ tracing.workspace = true
 indexmap.workspace = true
 url.workspace = true
 rand.workspace = true
-openssl.workspace = true
