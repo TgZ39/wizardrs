@@ -32,7 +32,6 @@ directories.workspace = true
 reqwest.workspace = true
 image.workspace = true
 rfd.workspace = true
-log.workspace = true
 chrono.workspace = true
 tracing-appender.workspace = true
 get_if_addrs.workspace = true
