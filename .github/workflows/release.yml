@@ -44,10 +44,6 @@ jobs:
             runs-on: windows-latest
             target: x86_64-pc-windows-msvc
 
-          - os-name: x86_64-pc-windows-gnu
-            runs-on: windows-latest
-            target: x86_64-pc-windows-gnu
-
           - os-name: x86_64-apple-darwin
             runs-on: macOS-latest
             target: x86_64-apple-darwin
