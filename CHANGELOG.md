@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update Changelog
 - Merge remote-tracking branch 'origin/master'
 - Update Changelog
 - Merge remote-tracking branch 'origin/master'
@@ -47,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix workflow changelog generation crash
 - Improve changelog generator
 - Trigger release workflow on release published
 - Fix git cliff config
