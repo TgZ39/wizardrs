@@ -60,6 +60,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         with:
@@ -67,9 +68,19 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: '--locked --release'
           strip: true
+
+      - name: Generate CHANGES.md
+        uses: orhun/git-cliff-action@v2
+        id: git-cliff-changes
+        with:
+          config: 'cliff.toml'
+          args: '--verbose --latest --strip header'
+        env:
+          OUTPUT: CHANGES.md
+
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
           executable-name: 'wizardrs-client'
           target: ${{ matrix.platform.target }}
-          changes-file: 'CHANGELOG.md'
+          changes-file: 'CHANGES.md'
