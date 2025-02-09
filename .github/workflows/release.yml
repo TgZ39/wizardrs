@@ -26,7 +26,7 @@ jobs:
 
       - name: Commit CHANGELOG.md
         run: |
-          git checkout <branch>
+          git checkout master
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           set +e
