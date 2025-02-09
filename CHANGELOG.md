@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Merge remote-tracking branch 'origin/master'
+- Update Changelog
+- Merge remote-tracking branch 'origin/master'
 - Actually remove `openssl` as a dependency
 - Update Changelog
 - Update dependencies
@@ -54,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove x86_64-unknown-linux-musl target
 - Remove unused `log` dependency
 
 ## [0.1.1] - 2025-01-30
