@@ -162,7 +162,11 @@ impl App {
                             body.row(15.0, |mut row| {
                                 // interface
                                 row.col(|ui| {
-                                    ui.monospace(interface);
+                                    if cfg!(target_os = "linux") {
+                                        ui.monospace(interface);
+                                    } else {
+                                        ui.monospace("unknown");
+                                    }
                                 });
                                 // url
                                 row.col(|ui| {
