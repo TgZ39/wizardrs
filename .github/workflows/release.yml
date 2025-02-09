@@ -1,6 +1,6 @@
 on:
   release:
-    types: [created, published]
+    types: [created]
 permissions:
   contents: write
 env:
@@ -23,6 +23,21 @@ jobs:
           args: '--verbose'
         env:
           OUTPUT: CHANGELOG.md
+
+      - name: Generate CHANGES.md
+        uses: orhun/git-cliff-action@v2
+        id: git-cliff-changes
+        with:
+          config: 'cliff.toml'
+          args: '--verbose --latest --strip header'
+        env:
+          OUTPUT: CHANGES.md
+
+      - name: Upload CHANGES.md
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'changes-md'
+          path: 'CHANGES.md'
 
       - name: Commit CHANGELOG.md
         run: |
@@ -69,14 +84,10 @@ jobs:
           args: '--locked --release'
           strip: true
 
-      - name: Generate CHANGES.md
-        uses: orhun/git-cliff-action@v2
-        id: git-cliff-changes
+      - name: Download CHANGES.md
+        uses: actions/download-artifact@v4
         with:
-          config: 'cliff.toml'
-          args: '--verbose --latest --strip header'
-        env:
-          OUTPUT: CHANGES.md
+          name: 'changes-md'
 
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
