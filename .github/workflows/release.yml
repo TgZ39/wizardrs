@@ -7,9 +7,36 @@ env:
   RUST_BACKTRACE: 1
   CACHE_ON_FAILURE: true
 jobs:
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate CHANGELOG.md
+        uses: orhun/git-cliff-action@v2
+        with:
+          config: 'cliff.toml'
+          args: '--verbose'
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Commit CHANGELOG.md
+        run: |
+          git checkout <branch>
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          set +e
+          git add CHANGELOG.md
+          git commit -m "chore: update Changelog"
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/TgZ39/wizardrs.git master
+
   release:
     name: Release - ${{ matrix.platform.os-name }}
-    continue-on-error: true
+    needs: generate-changelog
     strategy:
       matrix:
         platform:
@@ -41,24 +68,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Display structure of downloaded files
-        run: ls -R
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         with:
-          command: "build"
+          command: 'build'
           target: ${{ matrix.platform.target }}
-          args: "--release"
-          strip: false
-      - name: Display structure of downloaded files
-        run: ls -R
+          args: '--locked --release'
+          strip: true
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
           executable-name: 'wizardrs-client'
           target: ${{ matrix.platform.target }}
-          changes-file: ''
-        env:
-          GITHUB_TOKEN: $ {{ secrets.PERSONAL_ACCESS_TOKEN }}
-      - name: Display structure of downloaded files
-        run: ls -R
+          changes-file: 'CHANGELOG.md'
